@@ -60,7 +60,7 @@
       "entePasswordMessage": "Enter your password",
       "submitting": "Submitting...",
       "logIn": "Log in",
-      "forgotPassword": "Forgot your password?"
+      "forgotPassword": "Forgot password?"
     },
     "CreateAccount": {
       "heading": "New customer?",
@@ -706,5 +706,9 @@
     "glass": "Glass",
     "warning": "Warning: California Prop 65 Notice",
     "closeDetails": "Close Details"
+  },
+  "Brands": {
+    "title": "Brands",
+    "all": "All Brands"
   }
 }

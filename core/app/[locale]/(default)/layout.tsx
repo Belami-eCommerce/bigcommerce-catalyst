@@ -22,10 +22,10 @@ export default async function DefaultLayout({ params, children }: Props) {
       {/* //I want to add some components here if it was login page  */}
       {/* Can you make it */}
       {/* <main className="flex-1 px-4 2xl:container sm:px-10 xl:px-12 2xl:mx-auto main-slider"> */}
-      <main className="flex-1 main-slider">
+      {/* <main className="flex-1 main-slider"> */}
+      <main className="py-4 px-4 xl:px-12 main-slider">
         {children}
       </main>
-
       <Suspense>
         <Footer />
       </Suspense>
