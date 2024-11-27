@@ -178,7 +178,7 @@ export const CartItem = ({ currencyCode, product, deleteIcon, cartId }: Props) =
   return (
     <li className="border border-gray-200 mb-[24px]">
       <div className="flex flex-col gap-4 p-4 py-4 md:flex-row">
-        <div className="mb-5 flex flex-col gap-4 p-4 py-4 md:flex-row">
+        <div className="flex flex-col gap-4 p-4 py-4 md:flex-row">
           <div className="cart-main-img mx-auto w-full flex-none border border-gray-300 md:mx-0 md:w-[144px]">
             {product.image?.url ? (
               <BcImage
@@ -319,9 +319,15 @@ export const CartItem = ({ currencyCode, product, deleteIcon, cartId }: Props) =
               </div>
               <div className="flex flex-col gap-2 md:items-end">
                 {/* Desktop layout (unchanged) */}
-                <div className="cart-deleteIcon flex flex-col gap-0 md:gap-2 text-right md:items-end relative">
+                <div className="cart-deleteIcon flex flex-col gap-[15px] text-right md:items-end relative">
                   <RemoveItem currency={currencyCode} product={product} deleteIcon={deleteIcon} />
-                  <div className='mb-[20px] md:mb-0'>
+                  <div className='mb-[30px] md:mb-0'>
+                  <p className="text-left md:text-right font-normal text-[14px] leading-[24px] tracking-[0.25px] text-[#353535]">
+                      {format.number(product.extendedSalePrice.value, {
+                        style: 'currency',
+                        currency: currencyCode,
+                      })}
+                    </p>
                     <div className="flex items-center gap-[3px] text-[14px] font-normal leading-[24px] tracking-[0.25px] text-[#353535]">
                       {product.originalPrice.value &&
                       product.originalPrice.value !== product.listPrice.value ? (
@@ -336,12 +342,6 @@ export const CartItem = ({ currencyCode, product, deleteIcon, cartId }: Props) =
                         {discountPriceText}
                       </p>
                     </div>
-                    <p className="text-left md:text-right">
-                      {format.number(product.extendedSalePrice.value, {
-                        style: 'currency',
-                        currency: currencyCode,
-                      })}
-                    </p>
                   </div>
                   <ItemQuantity product={product} />
                 </div>

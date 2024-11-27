@@ -22,7 +22,7 @@ const Breadcrumbs = ({ breadcrumbs, className }: Props) => {
       <ul className="div-breadcrumb flex flex-wrap items-center justify-center py-[6px] text-base font-normal leading-8 tracking-tight text-[#7F7F7F] sm:justify-center md:justify-center lg:justify-start">
         <Fragment key="home">
           <li className="flex items-center">
-            <CustomLink aria-current={undefined} className={cn('')} href="/">
+            <CustomLink aria-current={undefined} className={cn('text-[#7F7F7F]')} href="/">
               Home
             </CustomLink>
           </li>
@@ -39,7 +39,7 @@ const Breadcrumbs = ({ breadcrumbs, className }: Props) => {
                   className={cn(
                     'font-normal hover:text-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20',
                     isLast ? '' : 'text-[#7F7F7F]',
-                    { 'text-custom-blue': isLast, 'text-[color]': color },
+                    { 'text-[#006380]': isLast, 'text-[color]': color },
                   )}
                   href={href}
                   style={{
