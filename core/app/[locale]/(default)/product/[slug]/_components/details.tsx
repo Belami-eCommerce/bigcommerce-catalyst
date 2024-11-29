@@ -1,12 +1,10 @@
 import { removeEdgesAndNodes } from '@bigcommerce/catalyst-client';
 import { useFormatter, useTranslations } from 'next-intl';
-
 import { PricingFragment } from '~/client/fragments/pricing';
 import { ProductItemFragment } from '~/client/fragments/product-item';
 import { FragmentOf, graphql } from '~/client/graphql';
 import CertificationsAndRatings from '~/components/ui/pdp/belami-certification-rating-pdp';
 import { Payment } from '~/components/ui/pdp/belami-payment-pdp';
-import Dropdown from '~/components/ui/pdp/belami-product-details-pdp';
 import { RequestQuote } from '~/components/ui/pdp/belami-request-a-quote-pdp';
 import { ShippingReturns } from '~/components/ui/pdp/belami-shipping-returns-pdp';
 import { imageManagerImageUrl } from '~/lib/store-assets';
@@ -17,6 +15,7 @@ import { ProductSchema, ProductSchemaFragment } from './product-schema';
 import { ReviewSummary, ReviewSummaryFragment } from './review-summary';
 import { Coupon } from './belami-product-coupon-pdp';
 import { BcImage } from '~/components/bc-image';
+import ProductDetailDropdown from '~/components/ui/pdp/belami-product-details-pdp';
 
 export const DetailsFragment = graphql(
   `
@@ -65,21 +64,24 @@ export const DetailsFragment = graphql(
 
 interface Props {
   product: FragmentOf<typeof DetailsFragment>;
+  collectionValue?: string;
+  dropdownSheetIcon?: string;
 }
 
-export const Details = ({ product }: Props) => {
+export const Details = ({ product, collectionValue , dropdownSheetIcon}: Props) => {
   const t = useTranslations('Product.Details');
   const format = useFormatter();
 
   const customFields = removeEdgesAndNodes(product.customFields);
-  const deleteIcon = imageManagerImageUrl('delete.png', '20w');
+  const closeIcon = imageManagerImageUrl('close.png', '14w');
+  const fanPopup = imageManagerImageUrl('grey-image.png', '150w');
+  const blankAddImg = imageManagerImageUrl('notneeded-1.jpg', '150w');
 
   const showPriceRange =
-    product.prices?.priceRange.min.value !== product.prices?.priceRange.max.value;
+    product.prices?.priceRange?.min?.value !== product.prices?.priceRange?.max?.value;
 
   const certificationIcon = imageManagerImageUrl('vector-7-.png', '20w');
   const multipleOptionIcon = imageManagerImageUrl('vector-5-.png', '20w');
-
 
   return (
     <div>
@@ -97,10 +99,15 @@ export const Details = ({ product }: Props) => {
             by{' '}
             <span className="products-underline border-b border-black">{product.brand?.name}</span>
           </span>
-          <span className="OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-black lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
-            from the{' '}
-            <span className="products-underline border-b border-black">Galtech International</span>
-          </span>
+
+          {collectionValue && (
+            <>
+              <span className="product-collection OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-black lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
+                from the{' '}
+                <span className="products-underline border-b border-black">{collectionValue}</span>
+              </span>
+            </>
+          )}
         </div>
 
         <ReviewSummary data={product} />
@@ -123,7 +130,7 @@ export const Details = ({ product }: Props) => {
           ) : (
             <>
               {product.prices.price?.value !== undefined && (
-                <span className="span2-product-price text-[1.25rem] font-medium leading-[2rem] tracking-[0.15px]">
+                <span className="span2-product-price text-[1.25rem] font-medium leading-[2rem] tracking-[0.15px] text-[#008bb7]">
                   <span>
                     {format.number(product.prices.price.value, {
                       style: 'currency',
@@ -136,7 +143,7 @@ export const Details = ({ product }: Props) => {
               {product.prices.saved?.value !== undefined &&
               product.prices.basePrice?.value !== undefined ? (
                 <>
-                  <span className="span3-product-price text-[1rem] font-normal leading-[2rem] tracking-[0.15px]">
+                  <span className="span3-product-price text-[1rem] text-[#002a37] font-normal leading-[2rem] tracking-[0.15px]">
                     <span className="line-through">
                       {format.number(product.prices.basePrice.value, {
                         style: 'currency',
@@ -159,7 +166,6 @@ export const Details = ({ product }: Props) => {
           )}
         </div>
       )}
-
       {/* coupon */}
       <Coupon />
 
@@ -167,7 +173,7 @@ export const Details = ({ product }: Props) => {
       <FreeDelivery />
 
       {/* Product Form */}
-      <ProductForm data={product} multipleOptionIcon={multipleOptionIcon} deleteIcon={deleteIcon} />
+      <ProductForm data={product} multipleOptionIcon={multipleOptionIcon} blankAddImg={blankAddImg} fanPopup={fanPopup} closeIcon={closeIcon} />
 
       <div className="div-product-description my-12 hidden">
         <h2 className="mb-4 text-xl font-bold md:text-2xl">{t('additionalDetails')}</h2>
@@ -225,7 +231,9 @@ export const Details = ({ product }: Props) => {
             ))}
         </div>
       </div>
-      <ProductSchema product={product} />
+      
+      <ProductSchema product={product}/>
+
       <div className="apple-pay mt-4 xl:hidden">
         <button className="flex w-[100%] items-center justify-center rounded bg-[#353535] p-4 text-white">
           <BcImage
@@ -246,10 +254,10 @@ export const Details = ({ product }: Props) => {
       <RequestQuote />
 
       {/* Certifications & Ratings */}
-      <CertificationsAndRatings certificationIcon={certificationIcon} />
+      <CertificationsAndRatings certificationIcon={certificationIcon} product={product} />
 
       {/* Dropdown */}
-      <Dropdown />
+      <ProductDetailDropdown product={product} dropdownSheetIcon={dropdownSheetIcon} />
 
       {/* Shipping & Returns */}
       <ShippingReturns />

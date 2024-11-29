@@ -50,25 +50,25 @@ const Footer = ({
   socialMediaLinks,
   ...props
 }: Props) => (
-  <footer className={cn('px-18 2xl:container 2xl:mx-auto', className)} {...props}>
-    <section className="section-footer flex flex-col gap-8 border-t border-gray-200 px-4 py-10 md:flex-row lg:gap-4 lg:px-12">
+  <footer className={cn('px-18  2xl:container 2xl:mx-auto !max-w-[100%] bg-[#002a37] text-white', className)} {...props}>
+    <section className="section-footer flex flex-col gap-8 border-t border-gray-200 px-4 pt-10 pb-0 md:flex-row lg:gap-4 lg:px-12">
       <nav className="grid flex-auto auto-cols-fr gap-8 sm:grid-flow-col" id="nav-footer-section">
         {sections.map((section, index) => (
           <div key={`${section.title}-${index}`}>
-            <h3 className="text-left text-[20px] font-medium leading-[32px] tracking-[0.15px] text-white">
+            <h3 className="text-left text-[20px] mb-[10px] font-medium leading-[32px] tracking-[0.15px] text-white">
               {section.title}
             </h3>
             <ul className="footer-submenu flex flex-col">
               {section.links.map((link, index) => (
-                <li key={`${link.label}-${index}`}>
-                  {link.href != '#' ? <CustomLink href={link.href}>{link.label}</CustomLink> : link.label }
+                <li key={`${link.label}-${index}`} className='mb-[14px] pt-1 pb-1'>
+                  {link.href != '#' ? <CustomLink className='!justify-start text-[14px] font-normal leading-[24px] tracking-[0.25px] text-left !text-white' href={link.href}>{link.label}</CustomLink> : link.label }
                 </li>
               ))}
             </ul>
           </div>
         ))}
       </nav>
-      <div className="div-footer flex flex-col gap-2.5 md:order-first md:grow">
+      <div className="div-footer flex flex-col gap-2.5 md:order-first md:grow w-[35%]">
         {Boolean(logo) && (
           <h3 className="footer-customer-service text-left text-[20px] font-medium leading-[32px] tracking-[0.15px] text-white">
             Customer Service
@@ -77,7 +77,7 @@ const Footer = ({
 
         {Boolean(contactInformation?.phone) && (
           <CustomLink
-            className="hover:text-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
+            className="flex-col hover:text-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
             href={`tel:${contactInformation?.phone}`}
           >
             <p className="mb-4 text-left font-sans text-[14px] font-normal leading-[24px] tracking-[0.25px] text-white">
@@ -97,20 +97,20 @@ const Footer = ({
               PHONE HOURS
             </p>
 
-            <p className="Footertxt mb-1.5 text-left text-[14px] font-normal leading-[24px] tracking-[0.25px] text-white">
+            <p className="Footertxt mb-1.5 text-left text-[14px] font-normal leading-[32px] tracking-[0.25px] text-white">
               Monday-friday 6am -5pm PST
             </p>
-            <p className="Footertxt mb-1.5 text-left text-[14px] font-normal leading-[24px] tracking-[0.25px] text-[#80C5DA] text-white">
+            <p className="Footertxt mb-1.5 text-left text-[14px] font-normal leading-[32px] tracking-[0.25px] text-white">
               (####) ###-###
             </p>
-            <h3 className="footerheading mb-1.5 text-left text-[14px] font-normal leading-[24px] tracking-[0.25px] text-white">
+            <h3 className="footerheading mb-1.5 text-left text-[14px] font-normal leading-[32px] tracking-[0.25px] text-white">
               {' '}
               CHAT HOURS{' '}
             </h3>
-            <p className="Footertxt Footertxt mb-1.5 text-left text-[14px] font-normal leading-[24px] tracking-[0.25px] text-white">
+            <p className="Footertxt  mb-1.5 text-left text-[14px] font-normal leading-[32px] tracking-[0.25px] text-white">
               Monday-Friday 6am-4pm PST
             </p>
-            <p className="Footertxt Footertxt mb-1.5 text-left text-[14px] font-normal leading-[24px] tracking-[0.25px] text-white">
+            <p className="Footertxt mb-1.5 text-left text-[14px] font-normal leading-[32px] tracking-[0.25px] text-white">
               Saturday & Sunday 6am-3pm PST
             </p>
           </CustomLink>
@@ -119,10 +119,10 @@ const Footer = ({
     </section>
 
     <section className="copyright">
-      <p className="text-white-400 sm:order-first">{copyright}</p>
-      <div className="flex gap-8" id="icon">
+      <p className="text-white-400 text-[14px] flex justify-center font-normal leading-[24px] tracking-[0.25px] text-left sm:order-first">{copyright}</p>
+      <div className="flex gap-8 justify-center py-[10px]" id="icon">
         <Locale />
-        <div className="flex gap-6">{paymentIcons}</div>
+        <div className="flex gap-[10px]">{paymentIcons}</div>
       </div>
     </section>
   </footer>

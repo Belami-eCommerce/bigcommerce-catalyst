@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { ReactNode, Suspense } from 'react';
 
 import { LayoutQuery } from '~/app/[locale]/(default)/query';
-import { getSessionCustomerId } from '~/auth';
+import { getSessionCustomerAccessToken } from '~/auth';
 import { client } from '~/client';
 import { readFragment } from '~/client/graphql';
 import { revalidate } from '~/client/revalidate-target';
@@ -18,20 +18,27 @@ import { Header as ComponentsHeader } from '../ui/header';
 import { logout } from './_actions/logout';
 import { CartLink } from './cart';
 import { HeaderFragment } from './fragment';
-import { QuickSearch } from './quick-search';
+//import { QuickSearch } from './quick-search';
+import { AutocompleteSearch } from './autocomplete-search';
+import { BcImage } from '../bc-image';
+import { imageManagerImageUrl } from '~/lib/store-assets';
 
 interface Props {
   cart: ReactNode;
 }
 
+
+const headerCart = imageManagerImageUrl('header-cart-icon.png', '25w');
+
+
 export const Header = async ({ cart }: Props) => {
   const locale = await getLocale();
   const t = await getTranslations('Components.Header');
-  const customerId = await getSessionCustomerId();
+  const customerAccessToken = await getSessionCustomerAccessToken();
 
   const { data: response } = await client.fetch({
     document: LayoutQuery,
-    fetchOptions: customerId ? { cache: 'no-store' } : { next: { revalidate } },
+    fetchOptions: customerAccessToken ? { cache: 'no-store' } : { next: { revalidate } },
   });
 
   const data = readFragment(HeaderFragment, response).site;
@@ -76,7 +83,17 @@ export const Header = async ({ cart }: Props) => {
                 className="p-3 text-black hover:bg-transparent hover:text-primary"
                 variant="subtle"
               >
-                <Hand className="mr-2" />
+                {/* <Hand className="mr-2" /> */}
+
+                <BcImage
+                  alt="an assortment of brandless products against a blank background"
+                  className="mr-2"
+                  height={28}
+                  priority={true}
+                  src={imageManagerImageUrl('waving-hand-1-.png', '20w')}
+                  width={28}
+                />
+
                 {'Support'}
               </Button>
             }
@@ -85,7 +102,7 @@ export const Header = async ({ cart }: Props) => {
           {/* Account Dropdown */}
           <Dropdown
             items={
-              customerId
+              customerAccessToken
                 ? [
                     { href: '/account', label: 'My Account' },
                     { href: '/account/favorites', label: 'Favorites' },
@@ -99,7 +116,7 @@ export const Header = async ({ cart }: Props) => {
                     { href: '/login', label: 'Favorites' },
                     { href: '/login', label: 'Purchase History' },
                     { href: '/login', label: 'Financing' },
-                    { href: '/login', label: 'Login' },
+                    { href: '/login', label: 'Login' },         
                   ]
             }
             trigger={
@@ -108,7 +125,14 @@ export const Header = async ({ cart }: Props) => {
                 className="p-3 text-black hover:bg-transparent hover:text-primary"
                 variant="subtle"
               >
-                <User className="mr-2" />
+                <BcImage
+                  className="mr-2"
+                  alt="an assortment of brandless products against a blank background"
+                  height={16}
+                  priority={true}
+                  src={imageManagerImageUrl('account-icon.png', '20w')}
+                  width={16}
+                />
                 {t('Account.account')}
               </Button>
             }
@@ -117,11 +141,11 @@ export const Header = async ({ cart }: Props) => {
       }
       activeLocale={locale}
       cart={
-        <p role="status">
+        <p role="status" className="header-cart-icon flex items-center">
           <Suspense
             fallback={
               <CartLink>
-                <ShoppingCart aria-label="cart" />
+                <ShoppingCart className="hidden header-cart-link" aria-label="cart" />
               </CartLink>
             }
           >
@@ -132,13 +156,13 @@ export const Header = async ({ cart }: Props) => {
       links={links}
       locales={localeLanguageRegionMap}
       logo={data.settings ? logoTransformer(data.settings) : undefined}
-      search={<QuickSearch logo={data.settings ? logoTransformer(data.settings) : ''} />}
+      search={<AutocompleteSearch />}     
     />
   );
 };
 
 export const HeaderSkeleton = () => (
-  <header className="flex min-h-[92px] animate-pulse items-center justify-between gap-1 overflow-y-visible bg-white px-4 2xl:container sm:px-10 lg:gap-8 lg:px-12 2xl:mx-auto 2xl:px-0">
+  <header className="flex min-h-[92px] !max-w-[100%] p-[0px_4em] animate-pulse items-center justify-between gap-1 overflow-y-visible bg-white 2xl:container sm:px-10 lg:gap-8 lg:px-12 2xl:mx-auto !px-[40px] 2xl:px-0">
     <div className="h-16 w-40 rounded bg-slate-200" />
     <div className="hidden space-x-4 lg:flex">
       <div className="h-6 w-20 rounded bg-slate-200" />

@@ -1,9 +1,9 @@
+// NumbersOnly.tsx
 import { FragmentOf } from 'gql.tada';
 import { useTranslations } from 'next-intl';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, KeyboardEvent } from 'react';
 
 import { Field, FieldControl, FieldLabel, FieldMessage, Input } from '~/components/ui/form';
-
 import { FormFieldsFragment } from './fragment';
 
 type NumbersOnlyType = Extract<
@@ -22,6 +22,36 @@ interface NumbersOnlyProps {
 export const NumbersOnly = ({ defaultValue, field, isValid, name, onChange }: NumbersOnlyProps) => {
   const t = useTranslations('Components.FormFields.Validation');
 
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+    // Allow only numbers, backspace, delete, arrow keys, and tab
+    const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'];
+    const isNumber = /^[0-9]$/.test(e.key);
+
+    if (!isNumber && !allowedKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handlePaste = (e: ClipboardEvent) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData?.getData('text');
+    if (pastedText && /^\d+$/.test(pastedText)) {
+      const input = e.target as HTMLInputElement;
+      const currentValue = input.value;
+      const selectionStart = input.selectionStart || 0;
+      const selectionEnd = input.selectionEnd || 0;
+
+      input.value =
+        currentValue.substring(0, selectionStart) +
+        pastedText +
+        currentValue.substring(selectionEnd);
+
+      // Trigger onChange event
+      const event = new Event('input', { bubbles: true });
+      input.dispatchEvent(event);
+    }
+  };
+
   return (
     <Field className="relative space-y-2" name={name}>
       <FieldLabel
@@ -39,10 +69,14 @@ export const NumbersOnly = ({ defaultValue, field, isValid, name, onChange }: Nu
           max={field.maxNumber ?? undefined}
           min={field.minNumber ?? undefined}
           minLength={field.minNumber ?? undefined}
-          onChange={field.isRequired ? onChange : undefined}
+          onChange={onChange}
           onInvalid={field.isRequired ? onChange : undefined}
+          onKeyDown={handleKeyPress}
+          onPaste={handlePaste as any}
           required={field.isRequired}
-          type="number"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
         />
       </FieldControl>
       <div className="relative h-7">
@@ -80,3 +114,5 @@ export const NumbersOnly = ({ defaultValue, field, isValid, name, onChange }: Nu
     </Field>
   );
 };
+
+export default NumbersOnly;

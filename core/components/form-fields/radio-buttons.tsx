@@ -31,7 +31,7 @@ export const RadioButtons = ({
   const validationError = field.isRequired && isValid === false;
 
   return (
-    <Field className="relative space-y-2" name={name}>
+    <Field className="relative space-y-2 mm5" name={name}>
       <fieldset>
         <FieldLabel asChild id={name}>
           <legend className="mb-2.5 inline-flex w-full items-center justify-between text-base font-semibold">
@@ -56,7 +56,7 @@ export const RadioButtons = ({
         />
         <div className="relative h-7">
           {validationError && (
-            <FieldMessage className="inline-flex w-full text-xs font-normal text-error-secondary">
+            <FieldMessage className="inline-flex w-full text-xs font-normal text-error">
               {t('empty')}
             </FieldMessage>
           )}

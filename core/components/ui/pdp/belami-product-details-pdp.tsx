@@ -1,56 +1,167 @@
+'use client';
 
-"use client"; 
-
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-const Dropdown: React.FC = () => {
-    const t = useTranslations('productDetailDropdown');
+import { GetProductMetaFields } from '~/components/management-apis';
+import {
+  getMetaFieldsByProduct,
+  fetchVariantDetails,
+  fetchIncludedItems,
+  processMetaFields,
+} from '~/components/common-functions';
+import { BcImage } from '~/components/bc-image';
+import type { StaticImageData } from 'next/image';
+
+export interface MetaField {
+  id?: number;
+  entityId: number;
+  key: string;
+  value: string;
+  namespace?: string;
+  resource_type?: string;
+  resource_id?: number;
+  description?: string;
+  date_created?: string;
+  date_modified?: string;
+  owner_client_id?: string;
+}
+
+export interface MetaFieldData {
+  metaField: MetaField | null;
+  productMetaField: MetaField | null;
+  message: string;
+  hasVariantOptions: boolean;
+  isVariantData: boolean;
+}
+
+export interface IncludedItem {
+  name: string;
+}
+
+export interface ProcessedDetail {
+  category: string;
+  order: number;
+  mainOrder: number;
+  key: string;
+  value: string;
+}
+
+export interface GroupedDetails {
+  category: string;
+  order: number;
+  details: ProcessedDetail[];
+}
+
+export interface Variant {
+  entityId: number;
+  sku: string;
+}
+
+export interface ProcessedMetaFieldsResponse {
+  variantDetails: MetaField[];
+  groupedDetails: GroupedDetails[];
+}
+
+interface dropdownIcon {
+  dropdownSheetIcon?: string | StaticImageData;
+}
+
+const ProductDetailDropdown = ({ product, dropdownSheetIcon }: { product: any } & dropdownIcon) => {
+  const t = useTranslations('productDetailDropdown');
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null); // Ref for the "Product Details" button
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Toggle dropdown visibility
+  const [installSheet, setInstallSheet] = useState<MetaField | null>(null);
+  const [specSheet, setSpecSheet] = useState<MetaFieldData | null>(null);
+  const [variantDetails, setVariantDetails] = useState<MetaField[]>([]);
+  const [groupedDetails, setGroupedDetails] = useState<GroupedDetails[]>([]);
+  const [includedItems, setIncludedItems] = useState<{
+    productLevel: IncludedItem[];
+    variantLevel: IncludedItem[];
+  }>({
+    productLevel: [],
+    variantLevel: [],
+  });
+
+  useEffect(() => {
+    const loadProductDetails = async () => {
+      if (!product) return;
+
+      try {
+        const { variantDetails: newVariantDetails, groupedDetails: newGroupedDetails } =
+          await fetchVariantDetails(product);
+        setVariantDetails(newVariantDetails);
+        setGroupedDetails(newGroupedDetails);
+
+        const productMetaFields = await GetProductMetaFields(product.entityId, '');
+
+        const includedItemsData = await fetchIncludedItems(product, productMetaFields);
+        setIncludedItems(includedItemsData);
+
+        const installSheetMeta = productMetaFields?.find(
+          (meta: MetaField) => meta.key === 'install_sheet',
+        );
+        setInstallSheet(installSheetMeta || null);
+
+        const specSheetData = await getMetaFieldsByProduct(product, 'spec_sheet');
+        setSpecSheet(specSheetData as MetaFieldData);
+      } catch (error) {
+        console.error('Error loading product details:', error);
+      }
+    };
+
+    loadProductDetails();
+  }, [product]);
+
+  const getSpecSheetValue = () => {
+    if (!specSheet) return null;
+    const isUsingVariant = specSheet.isVariantData && specSheet.metaField?.value;
+    return isUsingVariant ? specSheet.metaField?.value : specSheet.productMetaField?.value;
+  };
+
   const toggleDropdown = () => setIsOpen((prev) => !prev);
 
-  // Close dropdown and set focus to the button
   const closeDropdown = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent event bubbling to avoid unexpected behaviors
+    e.stopPropagation();
     setIsOpen(false);
     if (buttonRef.current) {
-      buttonRef.current.focus(); // Set focus back to the "Product Details" button
+      buttonRef.current.focus();
     }
   };
 
-  // Handle clicks outside the dropdown
   const handleClickOutside = (e: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
       setIsOpen(false);
     }
   };
 
-  // Add event listener for clicks outside
   useEffect(() => {
-    document.addEventListener("click", handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
     return () => {
-      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, []);
 
+  const specSheetUrl = getSpecSheetValue();
+  const installSheetUrl = installSheet?.value;
+
   return (
     <div
-      className={`mt-6 xl:mt-12 relative inline-block w-full transition-all duration-300`}
+      className="relative mt-6 inline-block w-full transition-all duration-300 xl:mt-12"
       ref={dropdownRef}
     >
       <button
-        ref={buttonRef} // Assign ref to the button
-        className="flex items-center cursor-pointer relative w-full text-left border border-gray-300 rounded py-4 px-6"
+        ref={buttonRef}
+        className="relative flex w-full cursor-pointer items-center rounded border border-gray-300 px-6 py-4 text-left"
         onClick={toggleDropdown}
+        type="button"
       >
-        <span className="flex-grow text-center uppercase text-[0.875rem] font-semibold text-[#002A37]">
-      {t("productDetails")}
+        <span className="flex-grow text-center text-[0.875rem] font-semibold uppercase text-[#002A37]">
+          {t('productDetails')}
         </span>
         <svg
-          className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           width="12"
           height="8"
           viewBox="0 0 12 8"
@@ -68,181 +179,151 @@ const Dropdown: React.FC = () => {
       </button>
 
       <div
-        className={`transition-max-height duration-300 overflow-hidden ${isOpen ? "max-h-[1600px]" : "max-h-0"}`}
-        style={{ transitionTimingFunction: "ease" }}
+        className={`transition-max-height overflow-hidden duration-300 ${
+          isOpen ? 'max-h-[1600px]' : 'max-h-0'
+        }`}
+        style={{ transitionTimingFunction: 'ease' }}
       >
         {isOpen && (
-          <div className="bg-white shadow-lg border border-gray-300 rounded mt-6 p-8 w-full">
-            {/* Product details content */}
-            <div className="flex justify-between items-center mb-2" style={{ fontSize: "18px" }}>
-              <span className="mt-4 mb-2 text-lg font-semibold" style={{ fontSize: "18px" }}>
-              {t("whatsInTheBox")}
-              </span>
-              <span style={{ fontSize: "14px" }}>{t("sku")}</span>
+          <div className="mt-6 w-full rounded border border-gray-300 bg-white p-8 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-lg font-semibold text-gray-900">{t('whatsInTheBox')}</span>
+              <span className="text-sm text-gray-600">SKU: {product?.sku || t('sku')}</span>
             </div>
-            <div className="mt-2 text-gray-700" style={{ fontSize: "14px" }}>
-              <span>{t("canopy")}</span> <span>|</span> <span>{t("shade")}</span> <span>|</span> <span>{t("rod2to6")}</span>{" "}
-              <span>|</span> <span>{t("rod2to12")}</span>
-            </div>
-            <div className="mt-4">
-              <button className="w-full flex items-center justify-center bg-[#008BB7] text-white py-2 px-4 rounded mb-2 text-sm">
-                <img
-                  alt="Download spec sheet"
-                  src="https://cdn11.bigcommerce.com/s-6cdngmevrl/images/stencil/original/image-manager/icons8-download-symbol-16.png?t=1726210410"
-                  height={16}
-                  width={16}
-                />
-                <span className="ml-2">{t("downloadSpecSheet")}</span>
-              </button>
 
-              <button className="w-full flex items-center justify-center border border-gray-300 py-2 px-4 rounded text-sm">
-                <img
-                  alt="Download installation sheet"
-                  src="https://cdn11.bigcommerce.com/s-6cdngmevrl/images/stencil/original/image-manager/icons8-download-symbol-16-1-.png?t=1726210403"
-                  height={16}
-                  width={16}
-                />
-                <span className="ml-2">{t("installationSheet")}</span>
-              </button>
-            </div>
-            <h2 className="mt-4 mb-2 text-lg font-semibold" style={{ fontSize: "18px" }}>
-             {t("dimensionsAndWeights")}
-             </h2>
-            <div className="mt-4 w-full border border-gray-300 flex justify-center items-center" style={{ textAlign: "center" }}>
-              <div className="border-gray-300 p-4">
-                <img
-                  src="https://cdn11.bigcommerce.com/s-ij3bmi5w7y/images/stencil/320w/image-manager/pdp-lamp-img.jpg?t=1725341763"
-                  alt="Dimensions and weights"
-                  style={{ maxWidth: "100%", height: "auto", display: "block" }}
-                />
+            <div className="mb-2">
+              <div className="text-gray-700">
+                {includedItems.variantLevel.length > 0
+                  ? includedItems.variantLevel.map((item, index) => (
+                      <React.Fragment key={`variant-${index}`}>
+                        <span>{item.name}</span>
+                        {index < includedItems.variantLevel.length - 1 && (
+                          <span className="mx-2">|</span>
+                        )}
+                      </React.Fragment>
+                    ))
+                  : includedItems.productLevel.length > 0
+                    ? includedItems.productLevel.map((item, index) => (
+                        <React.Fragment key={`product-${index}`}>
+                          <span>{item.name}</span>
+                          {index < includedItems.productLevel.length - 1 && (
+                            <span className="mx-2">|</span>
+                          )}
+                        </React.Fragment>
+                      ))
+                    : null}
               </div>
             </div>
-            <table className="mt-4 w-full border-collapse text-base" style={{ fontSize: "16px" }}>
-              <tbody>
-                <tr>
-                  <td className="border p-2" style={{ width: "30%" }}>
-                   {t("widthDiameter")}
-                  </td>
-                  <td className="border p-2" style={{ width: "70%" }}>
-                  {t("Eighteen")}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border p-2" style={{ width: "30%" }}>
-                  {t("height")}
-                  </td>
-                  <td className="border p-2" style={{ width: "70%" }}>
-                     {t("725")}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border p-2" style={{ width: "30%" }}>
-                   {t("depthExtension")}
-                  </td>
-                  <td className="border p-2" style={{ width: "70%" }}>
-                 {t("Eighteen")}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border p-2" style={{ width: "30%" }}>
-                  {t("canopyWidth")}
-                  </td>
-                  <td className="border p-2" style={{ width: "70%" }}>
-                  {t("fourteen")}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            {/* Add more product information here */}
-            <h2 className="mt-4 mb-2 text-lg font-semibold" style={{ fontSize: "18px" }}>
-             {t("installationDetails")}
-            </h2>
-            <table className="w-full border-collapse text-base" style={{ fontSize: "16px" }}>
-              <tbody>
-                <tr>
-                  <td className="border p-2" style={{ width: "30%" }}>
-                  {t("wireLength")}
-                  </td>
-                  <td className="border p-2" style={{ width: "70%" }}>
-                 {t("onetwenty")}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border p-2" style={{ width: "30%" }}>
-                {t("chainLength")}
-                  </td>
-                  <td className="border p-2" style={{ width: "70%" }}>
-                  {t("twelve")} 
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <h2 className="mt-4 mb-2 text-lg font-semibold" style={{ fontSize: '18px' }}>  {t("Lamping")} </h2>
-          <table className="w-full border-collapse text-base" style={{ fontSize: '16px' }}>
-            <tbody>
-              <tr>
-                <td className="border p-2" style={{ width: '30%' }}>{t("numberOfBulbs")}</td>
-                <td className="border p-2" style={{ width: '70%' }}>{t("one")}</td>
-              </tr>
-              <tr>
-                <td className="border p-2" style={{ width: '30%' }}>{t("numberOfBulbs")}</td>
-                <td className="border p-2" style={{ width: '70%' }}>{t("standardWattage")}</td>
-              </tr>
-            </tbody>
-          </table>
-          <h2 className="mt-4 mb-2 text-lg font-semibold" style={{ fontSize: '18px' }}>{t("compatibilityAndSmartFeatures")}</h2>
-          <table className="w-full border-collapse text-base" style={{ fontSize: '16px' }}>
-            <tbody>
-              <tr>
-                <td className="border p-2" style={{ width: '30%' }}>{t("smartCompatible")}</td>
-                <td className="border p-2" style={{ width: '70%' }}>{t("smartCompatibleText")}</td>
-              </tr>
-            </tbody>
-          </table>
-          <h2 className="mt-4 mb-2 text-lg font-semibold" style={{ fontSize: '18px' }}>{t("productDetailHeading")}</h2>
-          <table className="w-full border-collapse text-base" style={{ fontSize: '16px' }}>
-            <tbody>
-              <tr>
-                <td className="border p-2" style={{ width: '30%' }}>{t("finishes")}</td>
-                <td className="border p-2" style={{ width: '70%' }}>{t("finishesText")}</td>
-              </tr>
-              <tr>
-                <td className="border p-2" style={{ width: '30%' }}>{t("smartCompatible")}</td>
-                <td className="border p-2" style={{ width: '70%' }}>{t("glass")}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="mt-4 text-center underline text-base" style={{ fontSize: '16px' }}>{t("warning")}</div>
-           
-           
-           
+
+            <div className="space-y-2">
+              {specSheetUrl && (
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded bg-[#008BB7] px-4 py-2.5 text-sm text-white hover:bg-[#007aa3]"
+                >
+                  {dropdownSheetIcon && (
+                    <BcImage
+                      alt="SPEC SHEET"
+                      src={dropdownSheetIcon}
+                      height={20}
+                      priority={true}
+                      width={20}
+                    />
+                  )}
+                  <a
+                    className="text-white"
+                    href={specSheetUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    SPEC SHEET
+                  </a>
+                </button>
+              )}
+              {installSheetUrl && (
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded bg-[#008BB7] px-4 py-2.5 text-sm text-white hover:bg-[#007aa3]"
+                >
+                  {dropdownSheetIcon && (
+                    <BcImage
+                      alt="INSTALL SHEET"
+                      src={dropdownSheetIcon}
+                      height={20}
+                      priority={true}
+                      width={20}
+                    />
+                  )}
+                  <a
+                    className="text-white"
+                    href={installSheetUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    INSTALL SHEET
+                  </a>
+                </button>
+              )}
+            </div>
+
+            {groupedDetails.length > 0 && (
+              <div className="space-y-3">
+                {groupedDetails.map((group, groupIndex) => (
+                  <div key={`group-${groupIndex}`} className="pt-2">
+                    <h3 className="mb-3 text-xl font-bold text-gray-900">{group.category}</h3>
+                    <div className="w-full">
+                      <table className="w-full table-auto">
+                        <tbody>
+                          {group.details.map((detail, detailIndex) => (
+                            <tr key={`${group.category}-${detailIndex}`}>
+                              <td
+                                className="border p-2 py-2 pr-4 text-[15px] text-gray-700"
+                                style={{ width: '200px' }}
+                              >
+                                {detail.key}
+                              </td>
+                              <td className="border p-2 py-2 text-[15px] text-gray-900">
+                                {detail.value}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 text-center text-base underline" style={{ fontSize: '16px' }}>
+              {t('warning')}
+            </div>
+
             <button
-              className="mt-4 w-full flex items-center justify-center text-sm text-[#002A37]  flex items-centertext-left border border-gray-300 rounded py-4 px-6"
-              onClick={closeDropdown} // Close the dropdown on click
+              type="button"
+              className="mt-8 flex w-full items-center justify-center rounded border border-gray-300 px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              onClick={closeDropdown}
             >
-             <span className="flex-grow text-center uppercase text-[0.875rem] font-semibold text-[#002A37]">
-             {t("closeDetails")}
-             </span>
-         
+              <span>{t('closeDetails')}</span>
               <svg
-          className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          width="12"
-          height="8"
-          viewBox="0 0 12 8"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M1 1L6 6L11 1"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+                className={`ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                width="12"
+                height="8"
+                viewBox="0 0 12 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M1 1L6 6L11 1"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
-
-
           </div>
         )}
       </div>
@@ -250,4 +331,4 @@ const Dropdown: React.FC = () => {
   );
 };
 
-export default Dropdown;
+export default ProductDetailDropdown;

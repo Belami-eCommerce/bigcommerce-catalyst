@@ -40,7 +40,7 @@ const SubmitButton = () => {
 
   return (
     <Button
-      className="relative w-fit items-center px-8 py-2"
+      className="relative mb-[60px] flex h-[50px] w-full flex-row items-center justify-center rounded-[3px] bg-[#008BB7] p-[5px_10px] px-8 py-2 text-[14px] font-[500] uppercase tracking-[1.25px] text-white hover:bg-[rgb(75,200,240)] transition-colors duration-500"
       data-button
       loading={pending}
       loadingText={t('submitting')}
@@ -71,7 +71,6 @@ export const ResetPasswordForm = ({ reCaptchaSettings }: Props) => {
   const onReCatpchaChange = (token: string | null) => {
     if (!token) {
       setReCaptchaValid(false);
-
       return;
     }
 
@@ -80,95 +79,129 @@ export const ResetPasswordForm = ({ reCaptchaSettings }: Props) => {
   };
 
   const handleEmailValidation = (e: ChangeEvent<HTMLInputElement>) => {
-    const validationStatus = e.target.validity.valueMissing;
+    const validationStatus = e.target.validity.valueMissing || e.target.validity.typeMismatch;
 
     setIsEmailValid(!validationStatus);
   };
 
   const onSubmit = async (formData: FormData) => {
+    const email = formData.get('email')?.toString() || '';
+
+    if (!email) {
+      setIsEmailValid(false);
+      setFormStatus({ status: 'error', message: t('emailValidationMessage') });
+      return;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    console.log(emailRegex.test(email), 'Email Regex');
+
+    if (!emailRegex.test(email)) {
+      setIsEmailValid(false);
+      setFormStatus({ status: 'error', message: t('emailInvalidMessage') });
+      return;
+    }
+
+    setIsEmailValid(true);
+
     if (reCaptchaSettings?.isEnabledOnStorefront && !reCaptchaToken) {
       setReCaptchaValid(false);
-
       return;
     }
 
     setReCaptchaValid(true);
 
-    const submit = await resetPassword({
-      formData,
-      reCaptchaToken,
-      path: '/change-password',
-    });
-
-    if (submit.status === 'success') {
-      form.current?.reset();
-
-      const customerEmail = formData.get('email');
-
-      setAccountState({
-        status: 'success',
-        message: t('confirmResetPassword', { email: customerEmail?.toString() }),
+    try {
+      const submit = await resetPassword({
+        formData,
+        reCaptchaToken,
+        path: '/change-password',
       });
-      router.push('/login');
-    }
 
-    if (submit.status === 'error') {
-      setFormStatus({ status: 'error', message: submit.error ?? '' });
-    }
+      if (submit.status === 'success') {
+        form.current?.reset();
 
-    reCaptchaRef.current?.reset();
+        const customerEmail = formData.get('email');
+
+        setAccountState({
+          status: 'success',
+          message: t('confirmResetPassword', { email: customerEmail?.toString() }),
+        });
+        router.push('/login');
+      } else {
+        setFormStatus({ status: 'error', message: t('emailInvalidMessage') });
+      }
+    } catch (error) {
+      setFormStatus({ status: 'error', message: t('emailInvalidMessage') });
+    } finally {
+      reCaptchaRef.current?.reset();
+    }
   };
+
+  console.log([formStatus, isEmailValid]);
 
   return (
     <>
       {formStatus?.status === 'error' && (
-        <Message className="mb-8 w-full" variant={formStatus.status}>
+        <Message className="mb-8 w-full whitespace-pre" variant={formStatus.status}>
           <p>{formStatus.message}</p>
         </Message>
       )}
 
-      <p className="mb-4 text-base">{t('description')}</p>
-
-      <Form action={onSubmit} className="mb-14 flex flex-col gap-4 md:py-4 lg:p-0" ref={form}>
-        <Field className="relative space-y-2 pb-7" name="email">
-          <FieldLabel htmlFor="email">{t('emailLabel')}</FieldLabel>
-          <FieldControl asChild>
-            <Input
-              autoComplete="email"
-              error={!isEmailValid}
-              id="email"
-              onChange={handleEmailValidation}
-              onInvalid={handleEmailValidation}
-              required
-              type="email"
-            />
-          </FieldControl>
-          <FieldMessage
-            className="absolute inset-x-0 bottom-0 inline-flex w-full text-sm text-gray-500"
-            match="valueMissing"
-          >
-            {t('emailValidationMessage')}
-          </FieldMessage>
-        </Field>
-
-        {reCaptchaSettings?.isEnabledOnStorefront && (
-          <Field className="relative col-span-full max-w-full space-y-2 pb-7" name="ReCAPTCHA">
-            <ReCaptcha
-              onChange={onReCatpchaChange}
-              ref={reCaptchaRef}
-              sitekey={reCaptchaSettings.siteKey}
-            />
-            {!isReCaptchaValid && (
-              <span className="absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal text-red-200">
-                {t('recaptchaText')}
-              </span>
+      <Form
+        action={onSubmit}
+        className="reset-pass-form mx-0 mt-0 flex max-w-[none] flex-col gap-[22px] pt-0 xsm:mx-auto md:mt-[30px] md:max-w-[514px] md:py-4 lg:p-0"
+        ref={form}
+      >
+        <p className="text-[16px] font-normal leading-[32px] tracking-[0.5px] text-[#353535]">
+          {t('description')}
+        </p>
+        <div className="flex flex-col gap-[22px]">
+          <Field className="flex flex-col items-start gap-[9px]" name="email">
+            <FieldLabel
+              className="flex items-center text-[16px] font-normal tracking-[0.15px] text-[#353535]"
+              htmlFor="email"
+            >
+              {t('emailLabel')}
+            </FieldLabel>
+            <FieldControl asChild>
+              <Input
+                className="flex h-[44px] w-full flex-col items-start justify-center gap-[10px] rounded-[3px] border-[#cccbcb] bg-white"
+                autoComplete="email"
+                id="email"
+                // onChange={handleEmailValidation}
+                onInvalid={handleEmailValidation}
+                required
+                type="email"
+              />
+            </FieldControl>
+            {formStatus?.status === 'error' && (
+              <FieldMessage className="w-full text-red-700" variant={formStatus?.status}>
+                {formStatus?.message}
+              </FieldMessage>
             )}
           </Field>
-        )}
 
-        <FormSubmit asChild>
-          <SubmitButton />
-        </FormSubmit>
+          {reCaptchaSettings?.isEnabledOnStorefront && (
+            <Field className="relative col-span-full max-w-full space-y-2" name="ReCAPTCHA">
+              <ReCaptcha
+                onChange={onReCatpchaChange}
+                ref={reCaptchaRef}
+                sitekey={reCaptchaSettings.siteKey}
+              />
+              {!isReCaptchaValid && (
+                <span className="absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal text-red-200">
+                  {t('recaptchaText')}
+                </span>
+              )}
+            </Field>
+          )}
+
+          <FormSubmit asChild>
+            <SubmitButton />
+          </FormSubmit>
+        </div>
       </Form>
     </>
   );

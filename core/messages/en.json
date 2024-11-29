@@ -1,8 +1,36 @@
 {
   "Home": {
     "Carousel": {
-      "featuredProducts": "Featured Products",
-      "newestProducts": "Newest products"
+      "title": "Newest products"
+    },
+    "List": {
+      "title": "Featured products",
+      "cta": "Shop now"
+    },
+    "FeaturedImage": {
+      "title": "Title",
+      "altText": "An assortment of brandless products against a blank background",
+      "cta": "Shop now"
+    },
+    "Slides": {
+      "Slide1": {
+        "title": "25% Off Sale",
+        "altText": "An assortment of brandless products against a blank background",
+        "cta": "Shop now"
+      },
+      "Slide2": {
+        "title": "Great Deals",
+        "altText": "An assortment of brandless products against a blank background",
+        "cta": "Shop now"
+      },
+      "Slide3": {
+        "title": "Low Prices",
+        "altText": "An assortment of brandless products against a blank background",
+        "cta": "Shop now"
+      }
+    },
+    "Subscribe": {
+      "title": "Sign up for our newsletter"
     }
   },
   "ChangePassword": {
@@ -26,38 +54,40 @@
     "heading": "Log In",
     "Form": {
       "error": "Your email address or password is incorrect. Try signing in again or reset your password",
-      "emailLabel": "Email",
+      "emailLabel": "Email Address (Login ID)*",
       "enterEmailMessage": "Enter your email",
-      "passwordLabel": "Password",
+      "passwordLabel": "Password*",
       "entePasswordMessage": "Enter your password",
       "submitting": "Submitting...",
       "logIn": "Log in",
-      "forgotPassword": "Forgot your password?"
+      "forgotPassword": "Forgot password?"
     },
     "CreateAccount": {
       "heading": "New customer?",
       "accountBenefits": "Create an account with us and you'll be able to:",
-      "fastCheckout": "Check out faster",
-      "multipleAddresses": "Save multiple shipping addresses",
-      "ordersHistory": "Access your order history",
-      "ordersTracking":  "Track new orders",
-      "wishlists": "Save items to your Wishlist",
-      "createLink": "Create Account "
+      "fastCheckout": "Use your points across our entire network!",
+      "multipleAddresses": "Exclusive promotions on the products you love",
+      "ordersHistory": "Example Explanation: ## points for every $ spent + save 5% extra every 1000 points ($12345.55 spent = 20% Discount on EVERY future purchase)",
+      "ordersTracking":  "Save your order history, checkout faster",
+      "wishlists": "Save Favorites and Lists",
+      "exclusiveAccess":"First look at sales, new arrivals, news, and restocks!",
+      "createLink": "CREATE AN ACCOUNT"
     },
     "ForgotPassword": {
       "title": "Forgot password",
-      "heading": "Forgot password",
+      "heading": "Reset Your Password",
       "Form": {
-        "description": "Enter the email associated with your account below. We'll send you instructions to reset your password.",
-        "emailLabel": "Email",
+        "description": "Fill in your email below to request a new password. An email will be sent to the address below containing a link to verify your email address.",
+        "emailLabel": "Email Address",
         "emailValidationMessage": "Enter a valid email such as name@domain.com",
         "recaptchaText": "Pass ReCAPTCHA check",
         "confirmResetPassword": "If the email address {email} is linked to an account in our store, we have sent you a password reset email. Please check your inbox and spam folder if you don't see it.",
         "submitting": "Submitting...",
-        "submit": "Reset password"
+        "submit": "Reset password",
+        "emailInvalidMessage": "Invalid email"
       },
       "Errors": {
-        "error":"Unknown error."
+        "error": "Something went wrong. Please try again later."
       }
     }
   },
@@ -77,12 +107,16 @@
     }
   },
   "FacetedGroup": {
+    "sortBy": "{items, plural, =0 {no items} =1 {1 item} other {# items}}",
+    "products": "Products",
+    "compare": "Compare",
     "MobileSideNav": {
       "filters": "Filters",
       "showFilters": "Show Filters",
       "subCategories": "Categories"
     },
     "FacetedSearch": {
+      "filterBy": "Filter by",
       "filters": "Filters",
       "RefineBy": {
         "refineBy": "Refine by",
@@ -103,7 +137,7 @@
       }
     },
     "SortBy": {
-      "ariaLabel": "Sort by:",
+      "label": "Sort",
       "featuredItems": "Featured items",
       "bestSellingItems": "Best selling items",
       "newestItems": "Newest items",
@@ -115,14 +149,15 @@
       "relevance": "Relevance"
     }
   },
-  "Brand": {
-    "sortBy": "{items, plural, =0 {no items} =1 {1 item} other {# items}}",
-    "products": "Products"
-  },
+  "Brand": {},
   "Category": {
     "sortBy": "{items, plural, =0 {no items} =1 {1 item} other {# items}}",
     "products": "Products",
-    "items": "items"
+    "items": "items",
+    "Empty": {
+      "message": "No products in this category",
+      "cta": "Return to Home"
+    }
   },
   "Search": {
     "title": "Search results",
@@ -145,12 +180,41 @@
       "changePassword": "Change password",
       "successMessage": "Your account has been successfully created"
     },
+    "Orders": {
+      "noOrders": "No orders yet",
+      "orderNumber": "Order #",
+      "placedDate": "Order placed",
+      "totalPrice": "Total",
+      "viewDetails": "View Details",
+      "trackOrder": "Track order",
+      "returnOrder": "Return items",
+      "orderSummary": "Order Summary",
+      "orderContents": "Order contents",
+      "orderSubtotal": "Subtotal:",
+      "orderGrandtotal": "Grand total:",
+      "orderDiscount": "Discount:",
+      "orderAppliedCoupon": "Coupon code ({code}):",
+      "orderShipping": "Shipping:",
+      "orderTax": "Tax:",
+      "printInvoice": "Print Invoice",
+      "repurchaseOrder": "Repurchase",
+      "return": "Return",
+      "shippedDate": "Shipped on",
+      "shippingAddress": "Shipping address",
+      "shippingMethod": "Shipping method",
+      "shipmentTitle": "Shipment",
+      "shippingTitle": "Shipping",
+      "shippingPayment": "Payment",
+      "shippingPaymentMethod": "Payment method",
+      "billingAddress": "Billing address"
+    },
     "Addresses": {
       "title": "Addresses",
 	  "alternativeAddress": "Alternative",
       "newAddress": "New address",
       "addNewAddress": "Add new address",
       "editButton": "Edit",
+      "emptyAddresses": "No addresses added",
       "deleteButton": "Delete",
       "confirmDeleteAddress": "Delete address",
       "deleteModalTitle": "Are you sure you want to delete this address?",
@@ -229,15 +293,15 @@
       "changePassword": "Change password",
       "submit": "Update settings",
       "submitting": "Update settings...",
-      "successMessage": "Dear {firstName} {lastName}, you successfully updated your account data",
+      "successMessage": "Your account settings have been updated",
       "validationMessages": {
-          "email": "Enter a valid email such as name@domain.com",
-          "empty": "This field can not be empty",
-          "firstName": "Enter your first name",
-          "lastName": "Enter your last name",
-          "city": "Enter a suburb / city",
-          "company": "Enter a company name",
-          "phone": "Enter a phone number"
+        "email": "Enter a valid email such as name@domain.com",
+        "empty": "This field can not be empty",
+        "firstName": "Enter your first name",
+        "lastName": "Enter your last name",
+        "city": "Enter a suburb / city",
+        "company": "Enter a company name",
+        "phone": "Enter a phone number"
       },
       "ChangePassword": {
         "title": "Change password",
@@ -278,6 +342,9 @@
     "proceedToCheckout": "CHECKOUT",
     "loading": "Loading...",
     "spinnerText": "Updating...",
+    "increment": "Increase quantity",
+    "decrement": "Decrease quantity",
+    "removeItem": "Remove item",
     "saveCartWishlist": "Save Cart",
     "saveCartWishlistSpan": "as Wishlist",
     "CheckoutSummary": {
@@ -341,6 +408,18 @@
       "remove": "Remove",
       "spinnerText": "Removing...",
       "errorMessage": "Something went wrong while removing item, please try again."
+    },
+    "Empty": {
+      "title": "Your cart is empty.",
+      "subtitle": "Add some products to get started.",
+      "cta": "Continue shopping"
+    },
+    "Errors": {
+      "cartNotFound": "No cartId cookie found.",
+      "lineItemNotFound": "Line item not found.",
+      "failedToRedirectToCheckout": "Failed to redirect to checkout.",
+      "failedToUpdateQuantity": "Failed to update quantity.",
+      "somethingWentWrong": "Something went wrong. Please try again later."
     }
   },
   "Compare": {
@@ -399,6 +478,8 @@
       "maxPurchase": "Maximum purchase",
       "availability": "Availability",
       "condition": "Condition",
+      "comingSoon": "Coming Soon",
+      "qty": "Qty",
       "weight": "Weight",
       "Prices": {
         "msrp": "MSRP",
@@ -450,13 +531,21 @@
     "message": "It looks like the page you requested has moved or no longer exists.",
     "Carousel": {
       "featuredProducts": "Featured products"
+    },
+    "Subscribe": {
+      "title": "Sign up for our newsletter"
     }
   },
   "Components": {
     "Header": {
+      "viewAll": "View all results",
+      "searchPlaceholder": "Search for products",
+      "emptySearchTitle": "No results were found for",
+      "emptySearchSubtitle": "Please try another search.",
       "Account": {
         "account": "Account",
         "myAccount": "My account",
+        "orders": "Orders",
         "addresses": "Addresses",
         "wishlists": "Wishlists",
         "accountSettings": "Account settings",
@@ -478,11 +567,12 @@
       "searchPlaceholder": "Search...",
       "search": "Search",
       "noSearchResults": "Sorry, no results for {term}.",
-      "checkSpelling": "Please check the spelling or try another search."
+      "checkSpelling": "Please check the spelling or try another search.",
+      "clickToSearch": "Click the search icon at the top to search all products."
     },
     "AddToCartButton": {
       "addToCart": "Add to cart",
-      "outOfStock": "Out of stock", 
+      "outOfStock": "Out of stock",
       "preorder": "Preorder",
       "unavailable": "Unavailable",
       "processing": "Processing..."
@@ -491,8 +581,11 @@
       "AddToCart": {
         "viewOptions": "View options",
         "success": "{cartItems, plural, =1 {1 Item} other {# Items}} added to <cartLink> your cart</cartLink>",
-        "error": "Error adding product to cart. Please try again."
-      }
+        "error": "Error adding product to cart. Please try again.",
+        "update": "Item updated to <cartLink> your cart</cartLink>"
+      },
+      "empty": "There is no product selected",
+      "error": "Error loading product"
     },
     "FormFields": {
       "Validation": {
@@ -575,35 +668,6 @@
     "etlCertified": "ETL Certified",
     "wetRated": "Wet Rated"
   },
-  "dropdown": {
-    "buttonText": "Product Details",
-    "closeButtonText": "Close Details",
-    "whatsInTheBox": "What's In The Box?",
-    "sku": "SKU###",
-    "specSheet": "SPEC SHEET",
-    "installationSheet": "INSTALLATION SHEET",
-    "dimensionsAndWeights": "Dimensions and Weights",
-    "installationDetails": "Installation Details",
-    "lamping": "Lamping",
-    "compatibilityAndSmartFeatures": "Compatibility and Smart Features",
-    "productDetails": "Product Details",
-    "warningNotice": "Warning: California Prop 65 Notice",
-    "canopy": "Canopy",
-    "shade": "Shade",
-    "rod2to6": "2-6\" Rod",
-    "rod2to12": "2-12\" Rod",
-    "widthDiameter": "Width/Diameter (in)",
-    "height": "Height",
-    "depthExtension": "Depth/Extension",
-    "canopyWidth": "Canopy Width",
-    "wireLength": "Wire Length",
-    "chainLength": "Chain Length",
-    "numberOfBulbs": "# of Bulbs",
-    "standardWattage": "Standard Wattage",
-    "smartCompatible": "Smart Compatible",
-    "finishes": "Finishes",
-    "shadeMaterial": "Shade Material"
-  },
   "productDetailDropdown": {
     "productDetails": "Product Details",
     "whatsInTheBox": "What's in the Box?",
@@ -631,6 +695,7 @@
     "numberOfBulbs": "# of Bulbs",
     "one": "1",
     "standardWattage": "100 Watts",
+    "standardWattageText":"standardWattageText",
     "compatibilityAndSmartFeatures": "Compatibility and Smart Features",
     "smartCompatible": "Smart Compatible",
     "smartCompatibleText": "Alexa, Google, Bluetooth, Cortana, Wifi",
@@ -641,5 +706,9 @@
     "glass": "Glass",
     "warning": "Warning: California Prop 65 Notice",
     "closeDetails": "Close Details"
+  },
+  "Brands": {
+    "title": "Brands",
+    "all": "All Brands"
   }
 }

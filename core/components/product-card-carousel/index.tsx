@@ -12,11 +12,13 @@ export const ProductCardCarousel = ({
   products,
   showCart,
   showCompare,
+  relatedProductArrow,
 }: {
   title: string;
   products: Product[];
   showCart?: boolean;
   showCompare?: boolean;
+  relatedProductArrow: string;
 }) => {
   if (products.length === 0) {
     return null;
@@ -32,5 +34,5 @@ export const ProductCardCarousel = ({
     />
   ));
 
-  return <Carousel className="mb-14" products={items} title={title} />;
+  return <Carousel className="mb-14" products={items} title={title} relatedProductArrow={relatedProductArrow}/>;
 };

@@ -1,11 +1,11 @@
 import { removeEdgesAndNodes } from '@bigcommerce/catalyst-client';
 import { getTranslations } from 'next-intl/server';
 
-import { getSessionCustomerId } from '~/auth';
+import { getSessionCustomerAccessToken } from '~/auth';
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
 import { revalidate } from '~/client/revalidate-target';
-import { ProductCardCarousel } from '~/components/product-card-carousel';
+import { FeaturedProductsCarousel } from '~/components/featured-products-carousel';
 import { ProductCardCarouselFragment } from '~/components/product-card-carousel/fragment';
 
 const RelatedProductsQuery = graphql(
@@ -28,19 +28,19 @@ const RelatedProductsQuery = graphql(
 );
 
 interface Props {
+  relatedProductArrow:string;
   productId: number;
 }
 
-export const RelatedProducts = async ({ productId }: Props) => {
+export const RelatedProducts = async ({ productId , relatedProductArrow }: Props) => {
   const t = await getTranslations('Product.Carousel');
-
-  const customerId = await getSessionCustomerId();
+  const customerAccessToken = await getSessionCustomerAccessToken();
 
   const { data } = await client.fetch({
     document: RelatedProductsQuery,
     variables: { entityId: productId },
-    customerId,
-    fetchOptions: customerId ? { cache: 'no-store' } : { next: { revalidate } },
+    customerAccessToken,
+    fetchOptions: customerAccessToken ? { cache: 'no-store' } : { next: { revalidate } },
   });
 
   const product = data.site.product;
@@ -51,12 +51,9 @@ export const RelatedProducts = async ({ productId }: Props) => {
 
   const relatedProducts = removeEdgesAndNodes(product.relatedProducts);
 
-  return (
-    <ProductCardCarousel
-      products={relatedProducts}
-      showCart={false}
-      showCompare={false}
-      title={t('relatedProducts')}
-    />
-  );
+  if (!relatedProducts.length) {
+    return null;
+  }
+
+  return <FeaturedProductsCarousel products={relatedProducts} title={t('relatedProducts')} />;
 };

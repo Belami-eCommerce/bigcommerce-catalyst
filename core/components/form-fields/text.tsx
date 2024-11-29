@@ -44,10 +44,10 @@ export const Text = ({ defaultValue, field, isValid, name, onChange, type }: Tex
           type={type === 'email' ? 'email' : 'text'}
         />
       </FieldControl>
-      <div className="relative h-7">
+      <div className="relative h-7 pass2">
         {field.isRequired && (
           <FieldMessage
-            className="inline-flex w-full text-xs font-normal text-error-secondary"
+            className="inline-flex w-full text-xs font-normal text-error-secondary validation-error-email relative"
             match="valueMissing"
           >
             {t(fieldName ?? 'empty')}
@@ -55,7 +55,7 @@ export const Text = ({ defaultValue, field, isValid, name, onChange, type }: Tex
         )}
         {fieldName === 'email' && (
           <FieldMessage
-            className="inline-flex w-full text-xs font-normal text-error-secondary"
+            className="inline-flex w-full text-xs font-normal text-error-secondary validation-error-13"
             match="typeMismatch"
           >
             {t('email')}

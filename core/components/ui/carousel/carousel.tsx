@@ -12,9 +12,10 @@ interface Props {
   pageSize?: 2 | 3 | 4;
   products: ReactNode[];
   title: string;
+  relatedProductArrow: string;
 }
 
-const Carousel = ({ className, title, pageSize = 4, products, ...props }: Props) => {
+const Carousel = ({ className, title, relatedProductArrow , pageSize = 4, products, ...props }: Props) => {
   const id = useId();
   const titleId = useId();
   const itemsPerGroup = pageSize;
@@ -114,7 +115,7 @@ const Carousel = ({ className, title, pageSize = 4, products, ...props }: Props)
           <button
             aria-label="Previous products"
             className={cn(
-              'carousel-previous-arrow inline-flex h-12 w-12 items-center justify-center focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:text-gray-400',
+              'carousel-previous-arrow absolute !z-[1] left-[2rem] top-[9em] inline-flex h-12 w-12 items-center justify-center focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:text-gray-400',
               api?.scrollSnapList().length === 1 && 'hidden',
             )}
             disabled={!canScrollPrev}
@@ -123,7 +124,7 @@ const Carousel = ({ className, title, pageSize = 4, products, ...props }: Props)
              <BcImage
             className='mb-2 -rotate-180'
               alt="Options icon"
-              src={imageManagerImageUrl('vector-8-.png', '30w')}
+              src={relatedProductArrow}
               height={20}
               priority={true}
               width={30}
@@ -134,7 +135,7 @@ const Carousel = ({ className, title, pageSize = 4, products, ...props }: Props)
           <button
             aria-label="Next products"
             className={cn(
-              'carousel-next-arrow inline-flex h-12 w-12 items-center justify-center focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:text-gray-400',
+              'carousel-next-arrow absolute !z-[1] right-[2em] top-[9em] inline-flex h-12 w-12 items-center justify-center focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:text-gray-400',
               api?.scrollSnapList().length === 1 && 'hidden',
             )}
             disabled={!canScrollNext}
@@ -143,7 +144,7 @@ const Carousel = ({ className, title, pageSize = 4, products, ...props }: Props)
               <BcImage
             className='mb-2'
               alt="Options icon"
-              src={imageManagerImageUrl('vector-8-.png', '30w')}
+              src={relatedProductArrow}
               height={20}
               priority={true}
               width={30}

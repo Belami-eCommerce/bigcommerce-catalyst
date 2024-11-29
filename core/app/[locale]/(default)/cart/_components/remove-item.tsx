@@ -64,7 +64,7 @@ export const RemoveItem = ({ currency, product, deleteIcon }: Props) => {
   };
 
   return (
-    <form action={onSubmitRemoveItem}>
+    <form action={onSubmitRemoveItem} className='flex justify-end md:block'>
       <RemoveFromCartButton icon={deleteIcon} />
     </form>
   );

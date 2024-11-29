@@ -87,14 +87,14 @@ const Gallery = ({ className, images, defaultImageIndex = 0, bannerIcon , galler
                 <button
                   aria-label="Enlarge product image"
                   aria-pressed={isActive}
-                  className="gallery-thumbnail relative h-12 w-12 flex-shrink-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 xl:h-24 xl:w-24"
+                  className="gallery-thumbnail xl:w-[6.4em] xl:h-[6.4em] relative h-12 w-12 flex-shrink-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
                   key={image.src}
                   onClick={() => openPopup(index)} 
                 >
                   <BcImage
                     alt={image.altText}
                     className={cn(
-                      'flex h-full w-full cursor-pointer items-center justify-center border-2 object-contain hover:border-primary',
+                      'flex h-full w-full cursor-pointer items-center justify-center border-2 object-fill hover:border-primary',
                       isActive && 'border-primary',
                     )}
                     height={94}
@@ -104,7 +104,7 @@ const Gallery = ({ className, images, defaultImageIndex = 0, bannerIcon , galler
                   />
                   <BcImage
                     alt={image.altText}
-                    className="absolute right-2 bottom-2 m-1 h-4 w-4 rounded-full bg-white p-1 object-cover opacity-70"
+                    className="absolute right-2 bottom-2 m-1 h-4 w-4 rounded-full bg-white p-1 object-fill opacity-70"
                     height={10}
                     priority={true}
                     src={galleryExpandIcon}
@@ -117,12 +117,12 @@ const Gallery = ({ className, images, defaultImageIndex = 0, bannerIcon , galler
             {!viewAll && images.length > 4 && (
               <button
                 aria-label="View all thumbnails"
-                className="gallery-thumbnail relative h-12 w-12 flex-shrink-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 xl:h-24 xl:w-24"
+                className="gallery-thumbnail xl:w-[6.4em] xl:h-[6.4em] relative h-12 w-12 flex-shrink-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 xl:h-24 xl:w-24"
                 onClick={() => openPopup()} 
               >
                 <BcImage
                   alt="View All"
-                  className="flex h-full w-full cursor-pointer items-center justify-center border-2 object-contain"
+                  className="flex h-full w-full cursor-pointer items-center justify-center border-2 object-fill"
                   height={94}
                   priority={true}
                   src={images[3].src}
@@ -140,7 +140,7 @@ const Gallery = ({ className, images, defaultImageIndex = 0, bannerIcon , galler
         <figure className="group main-gallery relative aspect-square h-full max-h-[100%] w-full">
           {selectedImage ? (
             <>
-              <div className="product-img" data-scale="2">
+              <div className="product-img relative overflow-hidden w-full h-full float-left" data-scale="2">
                 {/* Use the ProductImage component for zoom functionality */}
      
                 <ProductImage 

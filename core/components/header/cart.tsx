@@ -7,13 +7,14 @@ import { Link } from '~/components/link';
 import { CartIcon } from './cart-icon';
 
 export const CartLink = ({ children }: { children: ReactNode }) => (
-  <Link className="relative flex justify-between p-3 font-semibold" href="/cart">
+  <Link className="relative flex justify-between p-3 font-semibold pl-0" href="/cart">
     {children}
   </Link>
 );
 
 export const Cart = async () => {
-  const cartId = cookies().get('cartId')?.value;
+  const cookieStore = await cookies();
+  const cartId = cookieStore.get('cartId')?.value;
 
   if (!cartId) {
     return (

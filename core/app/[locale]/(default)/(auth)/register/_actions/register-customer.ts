@@ -37,25 +37,29 @@ const RegisterCustomerMutation = graphql(`
 type Variables = VariablesOf<typeof RegisterCustomerMutation>;
 type RegisterCustomerInput = Variables['input'];
 
-interface RegisterCustomerForm {
-  formData: FormData;
+interface RegisterCustomerOptions {
   reCaptchaToken?: string;
 }
 
 const isRegisterCustomerInput = (data: unknown): data is RegisterCustomerInput => {
-  if (typeof data === 'object' && data !== null && 'email' in data && 'address' in data) {
+  if (typeof data === 'object' && data !== null && 'email' in data) {
     return true;
   }
 
   return false;
 };
 
-export const registerCustomer = async ({ formData, reCaptchaToken }: RegisterCustomerForm) => {
+export const registerCustomer = async (
+  prevState: null,
+  data: FormData,
+  options?: RegisterCustomerOptions,
+) => {
   const t = await getTranslations('Register');
+  data.delete('customer-confirmPassword');
 
-  formData.delete('customer-confirmPassword');
-
-  const parsedData = parseRegisterCustomerFormData(formData);
+  let parsedDataValue: any = parseRegisterCustomerFormData(data);
+  delete parsedDataValue['address'];
+  const parsedData = parsedDataValue;
 
   if (!isRegisterCustomerInput(parsedData)) {
     return {
@@ -69,7 +73,7 @@ export const registerCustomer = async ({ formData, reCaptchaToken }: RegisterCus
       document: RegisterCustomerMutation,
       variables: {
         input: parsedData,
-        ...(reCaptchaToken && { reCaptchaV2: { token: reCaptchaToken } }),
+        ...(options?.reCaptchaToken && { reCaptchaV2: { token: options.reCaptchaToken } }),
       },
       fetchOptions: {
         cache: 'no-store',
@@ -87,7 +91,6 @@ export const registerCustomer = async ({ formData, reCaptchaToken }: RegisterCus
       error: result.errors.map((error) => error.message).join('\n'),
     };
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error(error);
 
     if (error instanceof BigCommerceAPIError) {
