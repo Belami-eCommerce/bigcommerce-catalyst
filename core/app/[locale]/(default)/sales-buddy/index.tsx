@@ -18,23 +18,10 @@ interface Props{
 export default function SalesBuddyAppIndex({cartId}:Props) {
   const [isOpen, setIsOpen] = useState(false); 
   const path = usePathname();
-  // Extract last segment of the path
-  const pathMatch = path.match(/\/([^\/?]*)/);
-  const lastSegment = pathMatch ? pathMatch[1] : '';
-  const endsWithNumbers = /\d+$/.test(lastSegment);
   const toggleDrawer = () => setIsOpen(!isOpen);
-  console.log(path.split('/').length - 1 === 2 && endsWithNumbers);
-  
-  const renderDrawerContent = () => {
-    if (path === '/') {
-      return (
-        <div className="">
-          <CustomerSupportPage />
-        </div>
-      );
-    }
 
-    else if (path === '/cart/') {
+  const renderDrawerContent = () => {
+    if (path.indexOf('/cart/') > -1) {
       return (
         <div className="space-y-[20px]">
           <ReferalId cartId={cartId} />
@@ -42,33 +29,28 @@ export default function SalesBuddyAppIndex({cartId}:Props) {
           <CustomerSupportPage />
         </div>
       );
-    }else{
+    }else if (path.indexOf('/c/') > -1 || path.indexOf('/search/') > -1) {
+      return (
+        <div className="space-y-[20px]">
+          <CustomerSupportPage />
+          <PLPPageInterface />
+        </div>
+      );
+    }else if (path.indexOf('/p/') !==-1) {
       return (
         <div className=" space-y-[20px] ">
           <SalesBuddyProductPage />
-          <PLPPageInterface />
+          <CustomerSupportPage />
+        </div>
+      );
+    }else{
+      return (
+        <div className=" space-y-[20px] ">
           <CustomerSupportPage />
         </div>
       );
     }
-
-    // if (path.split('/').length - 1 === 2 && endsWithNumbers) {
-    //   return (
-    //     <div className=" space-y-[20px] ">
-    //       <SalesBuddyProductPage />
-    //       <CustomerSupportPage />
-    //     </div>
-    //   );
-    // }
-    // if (!endsWithNumbers){
-    //     return (
-    //       <div className="">
-    //         <CustomerSupportPage />
-    //         <PLPPageInterface />
-    //       </div>
-    //     );
-    // }
-     return null; 
+    return null; 
   };
 
   return (
