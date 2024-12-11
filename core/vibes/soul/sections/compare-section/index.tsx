@@ -126,7 +126,7 @@ export function CompareSectionEmptyState({
               </CarouselItem>
             ))}
           </CarouselContent>
-          <div className="absolute inset-0 flex items-center justify-center text-xl">{message}</div>
+          <div className="absolute flex items-center justify-center text-xl">{message}</div>
         </Carousel>
       </div>
     </div>

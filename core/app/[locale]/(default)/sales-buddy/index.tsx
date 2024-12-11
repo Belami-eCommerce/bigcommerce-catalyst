@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
-import AppIcon from './assets/image.png';
+import AppIcon from './assets/support_agent.png';
 import DrawerModal from './common-components/SalesBuddyDrawer/SalesBuddyDrawer';
 import ChatIcon from './assets/DrawerIcon.png'; // Replace with your chat icon path
 import { usePathname } from 'next/navigation';
@@ -11,43 +11,63 @@ import ReferalId from './common-components/_components/CartReferralPage';
 import SalesBuddyProductPage from './common-components/_components/PDPPage';
 import PLPPageInterface from './common-components/_components/PLPPageInterface';
 
-export default function SalesBuddyAppIndex() {
+
+interface Props{
+  cartId:string;
+}
+export default function SalesBuddyAppIndex({cartId}:Props) {
   const [isOpen, setIsOpen] = useState(false); 
   const path = usePathname();
   // Extract last segment of the path
+  const pathMatch = path.match(/\/([^\/?]*)/);
+  const lastSegment = pathMatch ? pathMatch[1] : '';
+  const endsWithNumbers = /\d+$/.test(lastSegment);
   const toggleDrawer = () => setIsOpen(!isOpen);
+  console.log(path.split('/').length - 1 === 2 && endsWithNumbers);
   
   const renderDrawerContent = () => {
-    if (path.indexOf('/cart/') > -1) {
-      return (
-        <div className="space-y-[20px]">
-          <ReferalId />
-          <CartInterface />
-          <CustomerSupportPage />
-        </div>
-      );
-    }else if (path.indexOf('/c/') > -1 || path.indexOf('/search/') > -1) {
+    if (path === '/') {
       return (
         <div className="">
           <CustomerSupportPage />
-          <PLPPageInterface />
         </div>
       );
     }
-    else if (path.indexOf('/p/') !==-1) {
+
+    else if (path === '/cart/') {
       return (
-        <div className=" space-y-[20px] ">
-          <SalesBuddyProductPage />
+        <div className="space-y-[20px]">
+          <ReferalId cartId={cartId} />
+          <CartInterface />
           <CustomerSupportPage />
         </div>
       );
     }else{
       return (
-        <div className="">
+        <div className=" space-y-[20px] ">
+          <SalesBuddyProductPage />
+          <PLPPageInterface />
           <CustomerSupportPage />
         </div>
       );
     }
+
+    // if (path.split('/').length - 1 === 2 && endsWithNumbers) {
+    //   return (
+    //     <div className=" space-y-[20px] ">
+    //       <SalesBuddyProductPage />
+    //       <CustomerSupportPage />
+    //     </div>
+    //   );
+    // }
+    // if (!endsWithNumbers){
+    //     return (
+    //       <div className="">
+    //         <CustomerSupportPage />
+    //         <PLPPageInterface />
+    //       </div>
+    //     );
+    // }
      return null; 
   };
 
