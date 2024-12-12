@@ -16,10 +16,8 @@ export default function ReferrId() {
         fetchMyCookie();
     }, []);
     return (
-      <>
-        <div className="text-[14px] font-normal">
-          Referral Id : <div id="referrerIdDiv text-[14px] font-normal">#####</div>{' '}
-        </div>
-      </>
-    );
+    <>
+        <div className="">Referrer Id : <div id="referrerIdDiv">#####</div> </div>
+    </>
+    )
 }
