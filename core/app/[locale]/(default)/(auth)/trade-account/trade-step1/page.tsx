@@ -1,14 +1,16 @@
+// export const runtime = 'edge';
+
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { RegisterForm1 } from '../_components/register-form1'; // Correct import path
 import { getRegisterCustomerQuerys } from '../page-data';
 import { BcImage } from '~/components/bc-image';
 import { imageManagerImageUrl } from '~/lib/store-assets';
-import { Breadcrumbs as ComponentsBreadcrumbs } from '~/components/ui/breadcrumbs';
+// import { Breadcrumbs as ComponentsBreadcrumbs } from '~/components/ui/breadcrumbs';
 import ImageCarousel from '../trade-carousel';
 import TradeForm from './trade-form-section';
 import NetworkSection from './trade-our-network';
-import BrandPartnersSection from './trade-brand-partner';
+import BrandPartnersSection, { TestimonialData } from './trade-brand-partner';
 import TeamMembersSection from './trade-team-member';
 import HappyProsSection from './trade-testimonial';
 import type { FormField } from '../_components/register-form1';
@@ -66,27 +68,6 @@ export interface RegisterForm1Props {
   reCaptchaSettings: any;
 }
 
-const breadcrumbs = [
-  {
-    label: 'Apply',
-    href: '/trade-account/trade-step1',
-    color: '#008BB7',
-    fontWeight: '600', // Change to string
-  },
-  {
-    label: 'Business Details',
-    href: '/trade-account/trade-step2',
-    color: '#000000',
-    fontWeight: '400',
-  },
-  {
-    label: 'Confirmation',
-    href: '/trade-account/trade-step3',
-    color: '#000000',
-    fontWeight: '400',
-  },
-];
-
 // Define image URLs
 const imageUrls = {
   tradeAccountHeader: imageManagerImageUrl('trade-account-header.png', 'original'),
@@ -98,6 +79,33 @@ const imageUrls = {
   canadaLightning: imageManagerImageUrl('canada-lightning.png', 'original'),
   homeclickBlack: imageManagerImageUrl('homeclick-black.png', 'original'),
 };
+
+const testimonials: TestimonialData[] = [
+  {
+    imageSrc: imageManagerImageUrl('quorem-trade.png', 'original'),
+    imageAlt: 'Fast Shipping',
+    testimonial:
+      '"1StopLighting.com has been an invaluable partner for Quorum Brands, consistently exceeding our expectations as the go-to resource for builders, electricians, and lighting professionals. Their comprehensive understanding of Quorum products, combined with their unwavering commitment to customer satisfaction, sets them apart in the industry. Their dedication to excellence makes them our trusted ally."',
+    name: 'Field Bradford',
+    position: 'National Sales Manager',
+  },
+  {
+    imageSrc: imageManagerImageUrl('quoizel-trade.png', 'original'),
+    imageAlt: 'Reliable Support',
+    testimonial:
+      '"Belami not only offers top-tier products within the Pro category, seamlessly blending functionality and design, but also ensures unparalleled customer service, responsiveness, and expertise. Amidst the complexities of the industry, you can confidently rely on the Belami team to deliver the best fixtures for your projects."',
+    name: 'Howard Greenberg',
+    position: 'Director of Sales',
+  },
+  {
+    imageSrc: imageManagerImageUrl('maxim-trade.jpg', 'original'),
+    imageAlt: 'Quality Products',
+    testimonial:
+      '"Maxim/ET2 has a well-established professional relationship with the Belami team. They have proven to be a top tier partner working alongside trade professionals and helping grow a client\'s business. Balami\'s Pro team is second to none when it comes to product knowledge, logistic accuracy, and customer service."',
+    name: 'Jason Eberhardt',
+    position: 'National E-commerce Accounting Manager',
+  },
+];
 
 // Network images configuration
 const networkImages = [
@@ -204,7 +212,7 @@ export default async function Trade() {
       <div className="registeration-breadcrumbs-heading">
         {/* Hero Image Section */}
         <div className="relative w-full">
-          <div className="trade-banner">
+          <div className="trade-banner mb-[30px] lg:mb-[0px]">
             <BcImage
               alt="Hero Background"
               width={1600}
@@ -216,22 +224,21 @@ export default async function Trade() {
           </div>
         </div>
 
-        <ComponentsBreadcrumbs
+        {/* <ComponentsBreadcrumbs
           className="trade2-div-breadcrumb m-auto hidden w-[92%] pb-[10px] pt-[0px] lg:flex lg:pt-[30px]"
           breadcrumbs={breadcrumbs}
-        />
+        /> */}
 
         {/* Form Section */}
-        <div className="m-auto flex w-[88%] flex-col lg:m-[unset] lg:w-[96.5%] lg:flex-row lg:justify-between lg:space-x-8">
+        <div className="m-auto flex w-[88%] flex-col-reverse lg:m-[unset] lg:w-[96.5%] lg:flex-row lg:justify-between lg:space-x-8 xl:mt-[100px]">
           {/* Left Side Content */}
           <TradeForm tradeCircleCircle={imageUrls.tradeCircleCircle} />
 
           {/* Right Side Registration Form */}
-          <div className="rounded-lg bg-white pb-[3em] pt-[3em] shadow-md lg:w-1/2">
-            <h2 className="mb-[15px] text-center text-[34px] font-normal leading-[32px] text-[#353535]">
+          <div className="mb-5 rounded-lg bg-white p-[20px] shadow-md md:pb-[3em] md:pt-[3em] lg:mb-0 lg:w-1/2">
+            <h2 className="mb-[15px] text-center text-[25px] font-normal leading-[32px] text-[#353535] lg:text-[34px]">
               Apply Today
             </h2>
-
             <RegisterForm1
               addressFields={addressFields as AddressFormField[]}
               countries={countries}
@@ -242,7 +249,7 @@ export default async function Trade() {
           </div>
         </div>
 
-        <h2 className="mb-[40px] mt-[40px] text-center text-[24px] font-normal leading-[32px] text-[#353535]">
+        <h2 className="mb-[40px] mt-[0px] hidden text-center text-[24px] font-normal leading-[32px] text-[#353535] xl:mt-[40px] xl:block">
           Our Network
         </h2>
 
@@ -250,12 +257,12 @@ export default async function Trade() {
         <NetworkSection networkImages={networkImages} />
 
         {/* Brand Partners Section */}
-        <BrandPartnersSection />
+        <BrandPartnersSection testimonials={testimonials} />
 
         {/* Project Carousel Section */}
         <div className="w-full">
-          <h2 className="mb-[40px] mt-[40px] text-center text-[24px] font-normal leading-[32px] text-[#353535]">
-            Our Projects
+          <h2 className="mb-[40px] mt-[10px] text-center text-[24px] font-normal leading-[32px] text-[#353535]">
+            Our Partner Projects in Action
           </h2>
           <div className="m-auto w-[95%] px-4">
             <ImageCarousel images={images} height="520px" />

@@ -4,6 +4,9 @@ import { Link as CustomLink } from '~/components/link';
 import { cn } from '~/lib/utils';
 
 import { Locale } from './locale';
+import AgentFooter from '~/app/[locale]/(default)/sales-buddy/pages/footer';
+import CookieConsent from '../cookie-consent/cookieConsent';
+const flagSalesBuddy = Number(process.env.SALES_BUDDY_FLAG);
 
 interface Image {
   altText: string;
@@ -40,6 +43,7 @@ interface Props {
   socialMediaLinks?: SocialMediaLink[];
 }
 
+const cookieConsentUrl = process.env.COOKIE_CONSENT_URL;
 const Footer = ({
   className,
   contactInformation,
@@ -51,8 +55,17 @@ const Footer = ({
   ...props
 }: Props) => (
   <footer className={cn('px-18  2xl:container 2xl:mx-auto !max-w-[100%] bg-[#002a37] text-white', className)} {...props}>
+    <div className='absolute w-[370px] h-[130px] right-0 mt-[370px]'>
+      <div className=' flex flex-col  gap-[10px] '>
+        {flagSalesBuddy
+          ? <AgentFooter/>
+          : ''
+        }
+      </div>
+      </div>
+
     <section className="section-footer flex flex-col gap-8 border-t border-gray-200 px-4 pt-10 pb-0 md:flex-row lg:gap-4 lg:px-12">
-      <nav className="grid flex-auto auto-cols-fr gap-8 sm:grid-flow-col pl-[5em]" id="nav-footer-section">
+      <nav className="grid flex-auto auto-cols-fr gap-8 sm:grid-flow-col" id="nav-footer-section">
         {sections.map((section, index) => (
           <div key={`${section.title}-${index}`}>
             <h3 className="text-left text-[20px] mb-[10px] font-medium leading-[32px] tracking-[0.15px] text-white">
@@ -60,15 +73,16 @@ const Footer = ({
             </h3>
             <ul className="footer-submenu flex flex-col">
               {section.links.map((link, index) => (
-                <li key={`${link.label}-${index}`} className='mb-[14px]'>
-                  {link.href != '#' ? <CustomLink className='text-[14px] font-normal leading-[24px] tracking-[0.25px] text-left !text-white' href={link.href}>{link.label}</CustomLink> : link.label }
+                <li key={`${link.label}-${index}`} className='mb-[14px] pt-1 pb-1'>
+                  {link.href != '#' ? <CustomLink className='!justify-start text-[14px] font-normal leading-[24px] tracking-[0.25px] text-left !text-white' href={link.href}>{link.label}</CustomLink> : link.label}
                 </li>
               ))}
             </ul>
+
           </div>
         ))}
       </nav>
-      <div className="div-footer flex flex-col gap-2.5 md:order-first md:grow">
+      <div className="div-footer flex flex-col gap-2.5 md:order-first md:grow w-[35%]">
         {Boolean(logo) && (
           <h3 className="footer-customer-service text-left text-[20px] font-medium leading-[32px] tracking-[0.15px] text-white">
             Customer Service
@@ -77,7 +91,7 @@ const Footer = ({
 
         {Boolean(contactInformation?.phone) && (
           <CustomLink
-            className="hover:text-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
+            className="flex-col hover:text-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
             href={`tel:${contactInformation?.phone}`}
           >
             <p className="mb-4 text-left font-sans text-[14px] font-normal leading-[24px] tracking-[0.25px] text-white">
@@ -125,6 +139,7 @@ const Footer = ({
         <div className="flex gap-[10px]">{paymentIcons}</div>
       </div>
     </section>
+    <CookieConsent url={cookieConsentUrl} />
   </footer>
 );
 

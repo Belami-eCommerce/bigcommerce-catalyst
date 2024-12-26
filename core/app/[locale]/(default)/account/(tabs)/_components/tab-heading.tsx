@@ -1,9 +1,9 @@
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
-import { TabType } from '../layout';
+import { TabType } from './tab-navigation';
 
-export const TabHeading = ({ heading }: { heading: TabType }) => {
-  const t = useTranslations('Account.Home');
+export const TabHeading = async ({ heading }: { heading: TabType }) => {
+  const t = await getTranslations('Account.Home');
 
-  return <h2 className="mb-8 text-3xl font-black lg:text-4xl">{t(heading)}</h2>;
+  return <h2 className="text-[24px] font-semibold leading-[32px] text-[#353535] mb-[10px]">{t(heading)}</h2>;
 };

@@ -35,6 +35,8 @@ interface Props {
   closeIcon: string;
   fanPopup: string;
   blankAddImg: string;
+  productMpn: string | null;
+  showInSticky?: boolean;
 }
 
 const productItemTransform = (p: FragmentOf<typeof ProductItemFragment>) => {
@@ -56,23 +58,39 @@ const productItemTransform = (p: FragmentOf<typeof ProductItemFragment>) => {
   };
 };
 
-export const Submit = ({ data: product }: {data:Props['data']}) => {
+export const Submit = ({
+  data: product,
+  isSticky = false,
+}: {
+  data: Props['data'];
+  isSticky?: boolean;
+}) => {
   const { formState } = useFormContext();
   const { isSubmitting } = formState;
 
   return (
     <AddToCartButton data={product} loading={isSubmitting}>
-      <ShoppingCart className="mr-2 text-white right-[-0.6em] absolute invisible opacity-0 bg-transparent p-[4px]
-" />
+      {/* Remove the ShoppingCart icon completely */}
+
+      {isSticky ? '' : ''}
     </AddToCartButton>
   );
 };
 
-export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPopup, blankAddImg }: Props) => {
+export const ProductForm = ({
+  data: product,
+  multipleOptionIcon,
+  closeIcon,
+  fanPopup,
+  blankAddImg,
+  productMpn,
+  showInSticky = false,
+}: Props) => {
   const t = useTranslations('Product.Form');
   const cart = useCart();
-  const productFlyout:any = useCommonContext();
+  const productFlyout: any = useCommonContext();
   const productOptions = removeEdgesAndNodes(product.productOptions);
+
   if (productOptions?.length > 0) {
     const router = useRouter();
     const pathname = usePathname();
@@ -88,7 +106,7 @@ export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPo
     let urlParamArray: any = [];
     productOptions.forEach((option: any) => {
       const searchParamSelected = searchParams.get(String(option.entityId));
-      if(option?.values) {
+      if (option?.values) {
         const values: any = removeEdgesAndNodes(option.values);
         const selectedValue = option.entityId;
         if (selectedValue) {
@@ -104,7 +122,7 @@ export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPo
       handleInteraction(urlParamArray);
     }, []);
   }
-  
+
   const { handleSubmit, register, ...methods } = useProductForm();
 
   const productFormSubmit = async (data: ProductFormData) => {
@@ -122,7 +140,7 @@ export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPo
 
       return;
     }
-    
+
     toast.success(
       () => (
         <div className="flex items-center gap-3">
@@ -131,7 +149,7 @@ export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPo
               cartItems: quantity,
               cartLink: (chunks) => (
                 <Link
-                  className="font-semibold text-primary hover:text-secondary"
+                  className="hover:text-secondary font-semibold text-primary"
                   href="/cart"
                   prefetch="viewport"
                   prefetchKind="full"
@@ -145,27 +163,29 @@ export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPo
       ),
       { icon: <Check className="text-success-secondary" /> },
     );
-    if(result?.data?.entityId) {
+
+    if (result?.data?.entityId) {
       let cartData = await getCartData(result?.data?.entityId);
-      if(cartData?.data?.lineItems?.physicalItems) {
+      if (cartData?.data?.lineItems?.physicalItems) {
         productFlyout.setCartDataFn(cartData?.data);
         cartData?.data?.lineItems?.physicalItems?.forEach((items: any) => {
-          if(items?.productEntityId == data?.product_id) {
+          if (items?.productEntityId == data?.product_id) {
             let selectedOptions = items?.selectedOptions;
             let productSelection = true;
             selectedOptions?.some((selOptions: any) => {
-              if(data?.['attribute_'+selOptions?.entityId] != selOptions?.valueEntityId) {
+              if (data?.['attribute_' + selOptions?.entityId] != selOptions?.valueEntityId) {
                 productSelection = false;
                 return true;
               }
             });
-            if(productSelection) {
+            if (productSelection) {
               productFlyout.setProductDataFn(items);
             }
           }
         });
       }
     }
+
     const transformedProduct = productItemTransform(product);
 
     bodl.cart.productAdded({
@@ -180,16 +200,59 @@ export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPo
     });
   };
 
+  // If showing in sticky header, return only the Submit component
+  if (showInSticky) {
+    return (
+      <FormProvider handleSubmit={handleSubmit} register={register} {...methods}>
+        <form onSubmit={handleSubmit(productFormSubmit)}>
+          <input type="hidden" value={product.entityId} {...register('product_id')} />
+          <input type="hidden" value="1" {...register('quantity')} />
+          {productOptions.map((option) => {
+            if (option.__typename === 'MultipleChoiceOption') {
+              const values = removeEdgesAndNodes(option.values);
+              const defaultValue = values.find((value) => value.isDefault)?.entityId.toString();
+              return (
+                <input
+                  key={option.entityId}
+                  type="hidden"
+                  value={defaultValue}
+                  {...register(`attribute_${option.entityId}`)}
+                />
+              );
+            }
+            return null;
+          })}
+          <Submit data={product} isSticky={true} />
+        </form>
+      </FormProvider>
+    );
+  }
+
   return (
     <>
-      <ProductFlyout data={product} closeIcon={closeIcon} blankAddImg={blankAddImg} fanPopup={fanPopup}/>
+      <ProductFlyout
+        data={product}
+        closeIcon={closeIcon}
+        blankAddImg={blankAddImg}
+        fanPopup={fanPopup}
+      />
       <FormProvider handleSubmit={handleSubmit} register={register} {...methods}>
-        <form className="flex flex-col gap-6 @container product-variants" onSubmit={handleSubmit(productFormSubmit)}>
+        <form
+          className="product-variants flex flex-col gap-6"
+          onSubmit={handleSubmit(productFormSubmit)}
+        >
           <input type="hidden" value={product.entityId} {...register('product_id')} />
 
           {productOptions.map((option) => {
             if (option.__typename === 'MultipleChoiceOption') {
-              return <MultipleChoiceField key={option.entityId} option={option} multipleOptionIcon={multipleOptionIcon} />;
+              return (
+                <MultipleChoiceField
+                  key={option.entityId}
+                  option={option}
+                  multipleOptionIcon={multipleOptionIcon}
+                  productMpn={productMpn}
+                />
+              );
             }
 
             if (option.__typename === 'CheckboxOption') {
@@ -217,9 +280,9 @@ export const ProductForm = ({ data: product, multipleOptionIcon, closeIcon,fanPo
 
           <QuantityField />
 
-          <div className="mt-0 xl:mt-4 flex flex-col gap-4 @md:flex-row">
+          <div className="mt-0 flex flex-col gap-4 @md:flex-row xl:mt-4">
             <Submit data={product} />
-            <div className="w-full hidden">
+            <div className="hidden w-full">
               <Button disabled type="submit" variant="secondary">
                 <Heart aria-hidden="true" className="mr-2" />
                 <span>{t('saveToWishlist')}</span>

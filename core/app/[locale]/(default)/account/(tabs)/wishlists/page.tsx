@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default async function AccountTabPage({ searchParams }: Props) {
-  const { before, after, wishlistId } = searchParams;
+  const { before, after, wishlistId } = await searchParams;
 
   if (wishlistId) {
     return <div>wishlistDetails</div>;
@@ -33,4 +33,4 @@ export default async function AccountTabPage({ searchParams }: Props) {
   return <WishlistContent {...wishlistDetails} />;
 }
 
-export const runtime = 'edge';
+//export const runtime = 'edge';

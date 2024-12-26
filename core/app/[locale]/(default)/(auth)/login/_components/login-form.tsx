@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ChangeEvent, useState, useEffect } from 'react';
+import { ChangeEvent, useActionState, useState, useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 
 import { BcImage } from '~/components/bc-image';
@@ -25,44 +25,13 @@ import { login, getRememberMeCookie, deleteRememberCookie } from '../_actions/lo
 import { IconProps } from '../../fragments';
 import { cn } from '~/lib/utils';
 
-const PasswordInput = ({
-  error,
-  onChange,
-  onInvalid,
-  required,
-}: {
-  error: boolean;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onInvalid: (e: ChangeEvent<HTMLInputElement>) => void;
-  required: boolean;
-}) => {
-  return (
-    <div className="login-input relative !mt-[0px] h-[44px] w-full">
-      <input
-        className={cn(
-          'peer w-full border-2 border-gray-200 px-4 py-2.5 text-base placeholder:text-gray-500 hover:border-primary focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:bg-gray-100 disabled:hover:border-gray-200',
-          error &&
-            'border-error-secondary pe-12 hover:border-error focus-visible:border-error-secondary focus-visible:ring-error-secondary/20 disabled:border-gray-200',
-        )}
-        id="password"
-        name="password"
-        type="password"
-        onChange={onChange}
-        onInvalid={onInvalid}
-        required={required}
-        placeholder="Enter your password"
-      />
-    </div>
-  );
-};
-
 const SubmitButton = () => {
   const { pending } = useFormStatus();
   const t = useTranslations('Login');
 
   return (
     <Button
-      className="!important !w-full bg-[#008bb7] text-[14px] font-normal uppercase tracking-[1.25px] md:w-auto"
+      className="!important h-[50px] !w-full bg-[rgb(45,177,219)] text-[14px] font-normal uppercase tracking-[1.25px] transition-colors duration-500 hover:bg-[rgb(75,200,240)] md:w-auto"
       loading={pending}
       loadingText={t('Form.submitting')}
       variant="primary"
@@ -72,14 +41,20 @@ const SubmitButton = () => {
   );
 };
 
-export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: IconProps) => {
+export const LoginForm = ({
+  google,
+  facebookLogo,
+  appleLogo,
+  passwordHide,
+}: IconProps & { passwordHide: string }) => {
   const t = useTranslations('Login');
 
   const [isEmailValid, setIsEmailValid] = useState(true);
   const [isPasswordValid, setIsPasswordValid] = useState(true);
-  const [state, formAction] = useFormState(login, { status: 'idle' });
+  const [state, formAction] = useActionState(login, { status: 'idle' });
   const { accountState } = useAccountStatusContext();
   const [showLogin, setShowLogin] = useState(false);
+  const [emailError, setEmailError] = useState<string>('');
 
   const [rememberMeCookie, setRememberMeCookie] = useState<any>(null);
   useEffect(() => {
@@ -121,6 +96,23 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
     setRememberMeCookie(null);
   };
 
+  function validateEmail(email: string) {
+    if (!email.trim()) {
+      setEmailError('');
+      return true;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!emailRegex.test(email)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+
+    setEmailError('');
+    return true;
+  }
+
   return (
     <>
       {accountState.status === 'success' && (
@@ -130,7 +122,10 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
       )}
 
       {isFormInvalid && (
-        <Message className="mb-8 lg:col-span-2" variant="error">
+        <Message
+          className="mb-8 flex items-center rounded-[3px] border border-[#A71F23] lg:col-span-2"
+          variant="error"
+        >
           <p>{t('Form.error')}</p>
         </Message>
       )}
@@ -172,20 +167,23 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
               required
               type="email"
               placeholder="Enter your email"
+              onBlur={(e) => {
+                validateEmail((e.target as HTMLInputElement).value);
+              }}
             />
           </FieldControl>
           <FieldMessage
             className={
               cookieIsSet
                 ? 'hidden'
-                : 'relative inset-x-0 bottom-0 inline-flex w-full text-sm text-error'
+                : 'relative inset-x-0 bottom-0 inline-flex w-full text-sm text-[#A71F23]'
             }
             match="valueMissing"
           >
             {t('Form.enterEmailMessage')}
           </FieldMessage>
         </Field>
-
+        {emailError && <div className="text-[#A71F23] text-sm font-normal">{emailError}</div>}
         <Field className="pb- relative flex flex-col items-start gap-2 space-y-2" name="password">
           <FieldLabel
             className="login-label flex items-center tracking-[0.15px]"
@@ -203,34 +201,23 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
               required
               type="password"
               placeholder="Enter your password"
+              passwordHide={passwordHide}
             />
           </FieldControl>
           <FieldMessage
-            className="relative inset-x-0 bottom-0 inline-flex w-full text-sm text-error"
+            className="relative inset-x-0 bottom-0 inline-flex w-full text-sm text-[#A71F23]"
             match="valueMissing"
           >
             {t('Form.entePasswordMessage')}
           </FieldMessage>
         </Field>
 
-        <div className="remember-forgot-div">
-          <Field className="relative mt-2 inline-flex items-center space-y-2" name="remember-me">
-            <Checkbox
-              className="border-[#008bb7]"
-              aria-labelledby="remember-me"
-              id="remember-me"
-              name="remember-me"
-              value="1"
-            />
-            <Label
-              className="ml-2 mt-0 cursor-pointer space-y-2 pb-2 md:my-0"
-              htmlFor="remember-me"
-              id="remember-me"
-            >
-              Remember me
-            </Label>
-          </Field>
-        </div>
+        <Link
+          className="my-5 inline-flex items-center justify-start pb-2 text-sm font-semibold text-[#008BB7] hover:text-[#008BB7] md:my-0"
+          href="/login/forgot-password"
+        >
+          {t('Form.forgotPassword')}
+        </Link>
 
         <div className="login-submit-btn mt-[6px] w-full">
           <FormSubmit asChild>
@@ -238,15 +225,9 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
           </FormSubmit>
         </div>
 
-        <div className="forgot-signin-div md:grid-none grid items-center justify-between sm:grid sm:px-6 md:my-[18px] md:flex md:flex-row-reverse md:px-[0]">
-          <Link
-            className="my-5 inline-flex items-center justify-start text-sm font-semibold text-primary hover:text-secondary md:my-0"
-            href="/login/forgot-password"
-          >
-            {t('Form.forgotPassword')}
-          </Link>
-          <p className="cursor-pointer text-center text-[16px] font-normal leading-[32px] tracking-[0.15px] text-[#353535]">
-            Sign in With an Existing Account
+        <div className="forgot-signin-div md:grid-none grid items-center justify-between sm:grid sm:px-6 md:my-[14px] md:px-[0]">
+          <p className="cursor-pointer text-center text-[20px] font-medium leading-[32px] tracking-[0.15px] text-[#353535]">
+            Sign up With an Existing Account
           </p>
         </div>
 
@@ -260,6 +241,7 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
                 width={20}
                 height={20}
                 priority={true}
+                unoptimized={true}
               />
               <p className="text-[20px] font-medium text-[#1877F2]">Facebook</p>
             </button>
@@ -272,6 +254,7 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
                 width={20}
                 height={20}
                 priority={true}
+                unoptimized={true}
               />
               <p className="text-[20px] font-medium text-[#757575]">Google</p>
             </button>
@@ -284,6 +267,7 @@ export const LoginForm = ({ logo, google, email, facebookLogo, appleLogo }: Icon
                 width={24}
                 height={24}
                 priority={true}
+                unoptimized={true}
               />
               <p className="text-[20px] font-medium text-[#353535]">Apple</p>
             </button>

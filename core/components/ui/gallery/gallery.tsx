@@ -1,54 +1,290 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { BcImage } from '~/components/bc-image';
 import { cn } from '~/lib/utils';
 import { GalleryModel } from './belami-gallery-view-all-model-pdp';
 import { Banner } from './belami-banner-pdp';
-import { imageManagerImageUrl } from '~/lib/store-assets';
-import ProductImage from './product-zoom'; // Import the ProductImage component
+import ProductImage from './product-zoom';
+import { useCommonContext } from '~/components/common-context/common-provider';
+
+const isYoutubeUrl = (url?: string) => url?.includes('youtube.com') || url?.includes('youtu.be');
+
+const getYoutubeEmbedUrl = (url: string) => {
+  const videoId = url.match(
+    /(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^"&?\/\s]{11})/,
+  )?.[1];
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+};
+
+const getYoutubeThumbnailUrl = (url: string) => {
+  const videoId = url.match(
+    /(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^"&?\/\s]{11})/,
+  )?.[1];
+  return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+};
 
 interface Image {
   altText: string;
   src: string;
+  variantId?: string;
+}
+
+interface Video {
+  title: string;
+  url: string;
+  type?: 'youtube' | 'direct';
+}
+
+interface MediaItem {
+  type: 'image' | 'video';
+  altText?: string;
+  src?: string;
+  url?: string;
+  title?: string;
+  videoType?: 'youtube' | 'direct';
+  variantId?: string;
 }
 
 interface Props {
   className?: string;
   defaultImageIndex?: number;
   images: Image[];
-  bannerIcon: string; // Accept bannerIcon as a prop
-  galleryExpandIcon: string; 
+  videos: Video[];
+  bannerIcon: string;
+  galleryExpandIcon: string;
+  productMpn?: string | null;
+  selectedVariantId?: string | null;
 }
 
-const Gallery = ({ className, images, defaultImageIndex = 0, bannerIcon , galleryExpandIcon }: Props) => {
-  if (!images || images.length === 0) return null;
-
-  const [selectedImageIndex, setSelectedImageIndex] = useState(defaultImageIndex);
+const Gallery = ({
+  className,
+  images = [],
+  videos = [],
+  defaultImageIndex = 0,
+  bannerIcon,
+  galleryExpandIcon,
+  productMpn,
+  selectedVariantId,
+}: Props) => {
+  const { setCurrentMainMedia } = useCommonContext();
+  const [selectedIndex, setSelectedIndex] = useState(defaultImageIndex);
   const [viewAll, setViewAll] = useState(false);
-  const thumbnailRef = useRef<HTMLDivElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const prevMediaRef = useRef<string | null>(null);
 
-  const selectedImage = images[selectedImageIndex];
-  const remainingImagesCount = images.length - 4;
+  const thumbnailRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const { mediaItems, selectedItem } = useMemo(() => {
+    // Process images
+    const filteredImages = (() => {
+      let filtered = Array.isArray(images) ? images : [];
+      if (selectedVariantId) {
+        const variantImages = filtered.filter((img) => img.variantId === selectedVariantId);
+        filtered =
+          variantImages.length > 0 ? variantImages : filtered.filter((img) => !img.variantId);
+      }
+      if (productMpn) {
+        const mpnImages = filtered.filter((img) =>
+          img.altText?.toLowerCase()?.includes(productMpn.toLowerCase()),
+        );
+        if (mpnImages.length > 0) filtered = mpnImages;
+      }
+      return filtered;
+    })();
+
+    // Process videos
+    const processedVideos = (Array.isArray(videos) ? videos : []).map((video) => ({
+      ...video,
+      type: video.type || (isYoutubeUrl(video.url) ? 'youtube' : 'direct'),
+    }));
+
+    // Combine into media items
+    const items = [
+      ...filteredImages.map((image) => ({
+        type: 'image' as const,
+        altText: image.altText,
+        src: image.src,
+        variantId: image.variantId,
+      })),
+      ...processedVideos.map((video) => ({
+        type: 'video' as const,
+        title: video.title,
+        url: video.url,
+        videoType: video.type,
+      })),
+    ];
+
+    return {
+      mediaItems: items,
+      selectedItem: items[selectedIndex] || null,
+    };
+  }, [images, videos, selectedVariantId, productMpn, selectedIndex]);
+
+  // First, let's properly define our union type for MediaItem
+  type ImageItem = {
+    type: 'image';
+    altText: string;
+    src: string;
+    variantId?: string;
+  };
+
+  type VideoItem = {
+    type: 'video';
+    title: string;
+    url: string;
+    videoType: 'youtube' | 'direct';
+  };
+  type MediaItem = ImageItem | VideoItem;
+
+  // Helper function to safely get the media source
+  const getMediaSource = (item: MediaItem): string => {
+    if (item.type === 'image') {
+      return item.src;
+    }
+    return item.url;
+  };
+
+  // Helper function to safely get the media title/alt text
+  const getMediaTitle = (item: MediaItem): string => {
+    if (item.type === 'image') {
+      return item.altText;
+    }
+    return item.title;
+  };
+
+  // Fix the useEffect implementation
+  useEffect(() => {
+    if (!selectedItem) return;
+
+    const currentMediaKey = `${selectedItem.type}-${getMediaSource(selectedItem)}`;
+    if (prevMediaRef.current !== currentMediaKey) {
+      prevMediaRef.current = currentMediaKey;
+      setCurrentMainMedia({
+        type: selectedItem.type,
+        src: selectedItem.type === 'image' ? selectedItem.src : undefined,
+        url: selectedItem.type === 'video' ? selectedItem.url : undefined,
+        altText: selectedItem.type === 'image' ? selectedItem.altText : undefined,
+        title: selectedItem.type === 'video' ? selectedItem.title : undefined,
+      });
+    }
+  }, [selectedItem, setCurrentMainMedia]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [selectedVariantId]);
+
+  useEffect(() => {
+    setIsPlaying(false);
+    setVideoError(null);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  }, [selectedIndex]);
+
+  const handleThumbnailClick = (index: number) => {
+    if (index !== selectedIndex) {
+      setSelectedIndex(index);
+      prevMediaRef.current = null;
+    }
+  };
+
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+            setVideoError(null);
+          })
+          .catch((error) => {
+            console.error('Error playing video:', error);
+            setIsPlaying(false);
+            setVideoError('Failed to play video');
+          });
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const videoElement = e.target as HTMLVideoElement;
+    let errorMessage = 'Unknown video error';
+
+    if (videoElement.error) {
+      switch (videoElement.error.code) {
+        case 1:
+          errorMessage = 'Video loading aborted';
+          break;
+        case 2:
+          errorMessage = 'Network error while loading video';
+          break;
+        case 3:
+          errorMessage = 'Video decoding failed';
+          break;
+        case 4:
+          errorMessage = 'Video not supported';
+          break;
+      }
+    }
+
+    setVideoError(errorMessage);
+    setIsPlaying(false);
+  };
+
+  const handleSourceError = (e: React.SyntheticEvent<HTMLSourceElement, Event>) => {
+    console.error('Source Error Details:', {
+      sourceElement: e.target,
+      src: (e.target as HTMLSourceElement).src,
+      type: (e.target as HTMLSourceElement).type,
+    });
+    setVideoError('Failed to load video source');
+  };
+
+  const handleRetryVideo = () => {
+    setVideoError(null);
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
+  };
 
   const openPopup = (index?: number) => {
-    if (index !== undefined) setSelectedImageIndex(index);
+    if (typeof index === 'number' && index >= 0 && index < mediaItems.length) {
+      setSelectedIndex(index);
+      prevMediaRef.current = null;
+    }
     setViewAll(true);
   };
 
-  const closePopup = () => setViewAll(false);
-
-  const handleNextImage = () => {
-    setSelectedImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+  const closePopup = () => {
+    setViewAll(false);
   };
 
-  const handlePrevImage = () => {
-    setSelectedImageIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+  const handleNextItem = () => {
+    setSelectedIndex((prev) => {
+      const next = (prev + 1) % mediaItems.length;
+      prevMediaRef.current = null;
+      return next;
+    });
   };
 
-  useEffect(() => {
-    setSelectedImageIndex(defaultImageIndex);
-  }, [images, defaultImageIndex]);
+  const handlePrevItem = () => {
+    setSelectedIndex((prev) => {
+      const next = prev === 0 ? mediaItems.length - 1 : prev - 1;
+      prevMediaRef.current = null;
+      return next;
+    });
+  };
 
-  // Define promo images array
+  if (mediaItems.length === 0) return null;
+
+  const remainingItemsCount = Math.max(0, mediaItems.length - 4);
+
   const promoImages = [
     {
       alt: 'Buy one get one Free Now through 8/24',
@@ -66,45 +302,85 @@ const Gallery = ({ className, images, defaultImageIndex = 0, bannerIcon , galler
     {
       alt: 'Save 20% on all items through 9/01',
       images: [],
-      msg: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsa dolores dolorum velit cupiditate asperiores numquam aliquam dignissimos eius expedita ratione quidem enim fugit, aliquid odit a quibusdam corrupti accusamus? Placeat.',
+      msg: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.',
     },
   ];
 
   return (
     <div aria-live="polite" className={className}>
       <div className="gallery-container relative flex flex-col-reverse xl:flex-row">
-        <div className="gallery-images mr-0 mt-5 flex flex-col items-center xl:mr-4 xl:mt-0 xl:flex-col xl:space-y-4">
+        <div className="gallery-items mr-0 mt-5 flex flex-col items-center xl:mr-4 xl:mt-0 xl:flex-col xl:space-y-4">
           <nav
             ref={thumbnailRef}
             aria-label="Thumbnail navigation"
             className="no-scrollbar flex flex-row space-x-4 overflow-x-auto xl:flex-col xl:space-x-0 xl:space-y-4"
             style={{ maxHeight: '700px' }}
           >
-            {(viewAll ? images : images.slice(0, 4)).map((image, index) => {
-              const isActive = selectedImageIndex === index;
+            {(viewAll ? mediaItems : mediaItems.slice(0, 4)).map((item, index) => {
+              const isActive = selectedIndex === index;
+              const isVideo = item.type === 'video';
+              const isYoutube = isVideo && isYoutubeUrl(item.url);
 
               return (
                 <button
-                  aria-label="Enlarge product image"
+                  aria-label={isVideo ? 'Play video' : 'Enlarge product image'}
                   aria-pressed={isActive}
-                  className="gallery-thumbnail xl:w-[6.4em] xl:h-[6.4em] relative h-12 w-12 flex-shrink-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"
-                  key={image.src}
-                  onClick={() => openPopup(index)} 
+                  className={cn(
+                    'gallery-thumbnail relative h-12 w-12 flex-shrink-0 border-2 transition-colors duration-200 hover:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 xl:h-[6.4em] xl:w-[6.4em]',
+                    isActive ? 'border-primary' : 'border-gray-200',
+                  )}
+                  key={`${isVideo ? item.url : item.src}-${index}`}
+                  onClick={() => handleThumbnailClick(index)}
                 >
+                  {isVideo ? (
+                    <div className="relative h-full w-full">
+                      {isYoutube ? (
+                        <img
+                          src={getYoutubeThumbnailUrl(item.url || '') || ''}
+                          alt={item.title || 'Video thumbnail'}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <video className="h-full w-full object-cover" preload="metadata">
+                          <source src={item.url} type="video/mp4" onError={handleSourceError} />
+                        </video>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                        <svg
+                          className="h-6 w-6 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <BcImage
+                      alt={item.altText || ''}
+                      className="flex h-full w-full cursor-pointer items-center justify-center object-fill"
+                      height={94}
+                      priority={true}
+                      src={item.src || ''}
+                      width={94}
+                    />
+                  )}
                   <BcImage
-                    alt={image.altText}
-                    className={cn(
-                      'flex h-full w-full cursor-pointer items-center justify-center border-2 object-fill hover:border-primary',
-                      isActive && 'border-primary',
-                    )}
-                    height={94}
-                    priority={true}
-                    src={image.src}
-                    width={94}
-                  />
-                  <BcImage
-                    alt={image.altText}
-                    className="absolute right-2 bottom-2 m-1 h-4 w-4 rounded-full bg-white p-1 object-fill opacity-70"
+                    alt={item.altText || ''}
+                    className="absolute bottom-2 right-2 m-1 h-4 w-4 rounded-full bg-white object-fill p-1 opacity-70"
                     height={10}
                     priority={true}
                     src={galleryExpandIcon}
@@ -114,91 +390,171 @@ const Gallery = ({ className, images, defaultImageIndex = 0, bannerIcon , galler
               );
             })}
 
-            {!viewAll && images.length > 4 && (
+            {!viewAll && mediaItems.length > 4 && (
               <button
-                aria-label="View all thumbnails"
-                className="gallery-thumbnail xl:w-[6.4em] xl:h-[6.4em] relative h-12 w-12 flex-shrink-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 xl:h-24 xl:w-24"
-                onClick={() => openPopup()} 
+                aria-label="View all items"
+                className="gallery-thumbnail relative h-12 w-12 flex-shrink-0 border-2 border-gray-200 transition-colors duration-200 hover:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 xl:h-[6.4em] xl:w-[6.4em]"
+                onClick={() => openPopup()}
               >
-                <BcImage
-                  alt="View All"
-                  className="flex h-full w-full cursor-pointer items-center justify-center border-2 object-fill"
-                  height={94}
-                  priority={true}
-                  src={images[3].src}
-                  width={94}
-                />
+                {mediaItems[3]?.type === 'video' ? (
+                  <div className="relative h-full w-full">
+                    {isYoutubeUrl(mediaItems[3]?.url) ? (
+                      <img
+                        src={getYoutubeThumbnailUrl(mediaItems[3]?.url || '') || ''}
+                        alt="Video thumbnail"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <video className="h-full w-full object-cover" preload="metadata">
+                        <source src={mediaItems[3]?.url} type="video/mp4" />
+                      </video>
+                    )}
+                  </div>
+                ) : (
+                  <BcImage
+                    alt="View All"
+                    className="flex h-full w-full cursor-pointer items-center justify-center object-fill"
+                    height={94}
+                    priority={true}
+                    src={mediaItems[3]?.src || ''}
+                    width={94}
+                  />
+                )}
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 text-white">
                   <span className="text-[0.625rem] xl:text-lg">View All</span>
-                  <span className="mt-1 text-[0.625rem] xl:text-sm">{`(+${remainingImagesCount})`}</span>
+                  <span className="mt-1 text-[0.625rem] xl:text-sm">{`(+${remainingItemsCount})`}</span>
                 </div>
               </button>
             )}
           </nav>
         </div>
 
-        <figure className="group main-gallery relative aspect-square h-full max-h-[100%] w-full">
-          {selectedImage ? (
+        <figure className="main-gallery group relative aspect-square h-full max-h-[100%] w-full">
+          {selectedItem && (
             <>
-              <div className="product-img relative overflow-hidden w-full h-full float-left" data-scale="2">
-                {/* Use the ProductImage component for zoom functionality */}
-     
-                <ProductImage 
-         
-                  size='original'
-                  scale={2} src={selectedImage.src}  />
-              </div>
+              {selectedItem.type === 'image' ? (
+                <div
+                  className="product-img relative float-left h-full w-full overflow-hidden"
+                  data-scale="2"
+                >
+                  <ProductImage size="original" scale={2} src={selectedItem.src || ''} />
+                </div>
+              ) : (
+                <div className="relative h-full w-full">
+                  {isYoutubeUrl(selectedItem.url) ? (
+                    <div className="relative h-full w-full">
+                      <iframe
+                        src={getYoutubeEmbedUrl(selectedItem.url || '') || ''}
+                        className="absolute inset-0 h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={selectedItem.title || 'YouTube video'}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {videoError ? (
+                        <div className="flex h-full w-full items-center justify-center bg-gray-100">
+                          <div className="text-center">
+                            <p className="text-red-500">{videoError}</p>
+                            <button
+                              className="mt-2 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                              onClick={handleRetryVideo}
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <video
+                            ref={videoRef}
+                            className="h-full w-full object-cover"
+                            controls
+                            playsInline
+                            preload="metadata"
+                            onError={handleVideoError}
+                          >
+                            <source
+                              src={selectedItem.url}
+                              type="video/mp4"
+                              onError={handleSourceError}
+                            />
+                            Your browser does not support the video tag.
+                          </video>
+                          {!isPlaying && !videoError && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                              <button
+                                className="rounded-full bg-white p-4 shadow-lg transition-transform hover:scale-110"
+                                onClick={handleVideoClick}
+                                aria-label="Play video"
+                              >
+                                <svg
+                                  className="h-8 w-8 text-gray-800"
+                                  fill="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               <div
-                className="absolute right-4 bottom-4 m-1 h-6 w-6 rounded-full bg-white p-1 object-cover opacity-70 transition-opacity hover:opacity-100 cursor-pointer"
-                onClick={() => openPopup()} // Use openPopup to trigger the modal
+                className="absolute bottom-4 right-4 m-1 h-6 w-6 cursor-pointer rounded-full bg-white object-cover p-1 opacity-70 transition-opacity hover:opacity-100"
+                onClick={() => openPopup()}
               >
                 <img
                   alt="Overlay"
                   className="h-full w-full object-cover"
                   height={24}
-            
                   src={galleryExpandIcon}
                   width={24}
                 />
               </div>
 
-              <button
-                aria-label="Previous image"
-                className="absolute left-4 top-1/2 -translate-y-1/2 transform border border-gray-300 bg-white p-3 text-lg font-bold leading-[0.9] text-black opacity-0 transition-opacity duration-300 hover:bg-gray-200 group-hover:opacity-100"
-                onClick={handlePrevImage}
-              >
-                &#10094;
-              </button>
-              <button
-                aria-label="Next image"
-                className="absolute right-4 top-1/2 -translate-y-1/2 transform border border-gray-300 bg-white p-3 text-lg font-bold leading-[0.9] text-black opacity-0 transition-opacity duration-300 hover:bg-gray-200 group-hover:opacity-100"
-                onClick={handleNextImage}
-              >
-                &#10095;
-              </button>
+              {mediaItems.length > 1 && (
+                <>
+                  <button
+                    aria-label="Previous item"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 transform border border-gray-300 bg-white p-3 text-lg font-bold leading-[0.9] text-black opacity-0 transition-opacity duration-300 hover:bg-gray-200 group-hover:opacity-100"
+                    onClick={handlePrevItem}
+                  >
+                    &#10094;
+                  </button>
+                  <button
+                    aria-label="Next item"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 transform border border-gray-300 bg-white p-3 text-lg font-bold leading-[0.9] text-black opacity-0 transition-opacity duration-300 hover:bg-gray-200 group-hover:opacity-100"
+                    onClick={handleNextItem}
+                  >
+                    &#10095;
+                  </button>
+                </>
+              )}
             </>
-          ) : (
-            <div className="flex aspect-square items-center justify-center bg-gray-200">
-              <div className="text-base font-semibold text-gray-500">Coming soon</div>
-            </div>
           )}
         </figure>
-
       </div>
 
-      {/* GalleryModel for Image View */}
-      {viewAll && (
+      {viewAll && selectedItem && (
         <GalleryModel
           isOpen={viewAll}
           onClose={closePopup}
-          images={images}
-          selectedImageIndex={selectedImageIndex}
-          onSelectImage={setSelectedImageIndex}
+          mediaItems={mediaItems}
+          selectedIndex={selectedIndex}
+          onSelectIndex={(index) => {
+            setSelectedIndex(index);
+            prevMediaRef.current = null;
+          }}
         />
       )}
 
-      {/* Use PromoBanner here with the passed bannerIcon */}
       <Banner promoImages={promoImages} />
     </div>
   );

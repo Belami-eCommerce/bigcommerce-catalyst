@@ -11,6 +11,13 @@ interface CatchAllParams {
   rest: string[];
 }
 
+interface Props {
+  params: {
+    rest: string[];
+    locale: string;
+  };
+}
+
 export async function generateStaticParams() {
   const pages = await client.getPages().toArray();
 
@@ -26,12 +33,13 @@ export async function generateStaticParams() {
     );
 }
 
-export default async function CatchAllPage({ params }: { params: CatchAllParams }) {
-  const path = `/${params.rest.join('/')}`;
+export default async function CatchAllPage({ params }: { params: Promise<CatchAllParams> }) {
+  const { rest, locale } = await params;
+  const path = `/${rest.join('/')}`;
 
   const snapshot = await client.getPageSnapshot(path, {
     siteVersion: getSiteVersion(),
-    locale: params.locale === defaultLocale ? undefined : params.locale,
+    locale: locale === defaultLocale ? undefined : locale,
   });
 
   if (snapshot == null) return notFound();
@@ -44,4 +52,3 @@ export default async function CatchAllPage({ params }: { params: CatchAllParams 
 }
 
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';

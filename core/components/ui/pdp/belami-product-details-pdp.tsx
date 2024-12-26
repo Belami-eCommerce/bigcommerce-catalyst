@@ -7,10 +7,10 @@ import {
   getMetaFieldsByProduct,
   fetchVariantDetails,
   fetchIncludedItems,
-  processMetaFields,
 } from '~/components/common-functions';
 import { BcImage } from '~/components/bc-image';
 import type { StaticImageData } from 'next/image';
+import WarningDialog from './belami-warning-pop-up';
 
 export interface MetaField {
   id?: number;
@@ -62,16 +62,22 @@ export interface ProcessedMetaFieldsResponse {
   groupedDetails: GroupedDetails[];
 }
 
-interface dropdownIcon {
+interface ProductDetailDropdownProps {
+  product: any;
   dropdownSheetIcon?: string | StaticImageData;
 }
 
-const ProductDetailDropdown = ({ product, dropdownSheetIcon }: { product: any } & dropdownIcon) => {
+const ProductDetailDropdown: React.FC<ProductDetailDropdownProps> = ({
+  product,
+  dropdownSheetIcon,
+}) => {
   const t = useTranslations('productDetailDropdown');
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isWarningOpen, setIsWarningOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
+  // State for product details
   const [installSheet, setInstallSheet] = useState<MetaField | null>(null);
   const [specSheet, setSpecSheet] = useState<MetaFieldData | null>(null);
   const [variantDetails, setVariantDetails] = useState<MetaField[]>([]);
@@ -89,21 +95,26 @@ const ProductDetailDropdown = ({ product, dropdownSheetIcon }: { product: any } 
       if (!product) return;
 
       try {
+        // Fetch variant details
         const { variantDetails: newVariantDetails, groupedDetails: newGroupedDetails } =
           await fetchVariantDetails(product);
         setVariantDetails(newVariantDetails);
         setGroupedDetails(newGroupedDetails);
 
+        // Fetch meta fields
         const productMetaFields = await GetProductMetaFields(product.entityId, '');
 
+        // Fetch included items
         const includedItemsData = await fetchIncludedItems(product, productMetaFields);
         setIncludedItems(includedItemsData);
 
+        // Set install sheet
         const installSheetMeta = productMetaFields?.find(
           (meta: MetaField) => meta.key === 'install_sheet',
         );
         setInstallSheet(installSheetMeta || null);
 
+        // Set spec sheet
         const specSheetData = await getMetaFieldsByProduct(product, 'spec_sheet');
         setSpecSheet(specSheetData as MetaFieldData);
       } catch (error) {
@@ -188,7 +199,7 @@ const ProductDetailDropdown = ({ product, dropdownSheetIcon }: { product: any } 
           <div className="mt-6 w-full rounded border border-gray-300 bg-white p-8 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
               <span className="text-lg font-semibold text-gray-900">{t('whatsInTheBox')}</span>
-              <span className="text-sm text-gray-600">SKU: {product?.sku || t('sku')}</span>
+              <span className="text-sm text-gray-600">SKU: {product?.mpn || t('sku')}</span>
             </div>
 
             <div className="mb-2">
@@ -297,9 +308,11 @@ const ProductDetailDropdown = ({ product, dropdownSheetIcon }: { product: any } 
               </div>
             )}
 
-            <div className="mt-4 text-center text-base underline" style={{ fontSize: '16px' }}>
-              {t('warning')}
-            </div>
+            <WarningDialog
+              isOpen={isWarningOpen}
+              onOpenChange={setIsWarningOpen}
+              triggerText={t('warning')}
+            />
 
             <button
               type="button"

@@ -1,26 +1,18 @@
-// register
-
 'use client';
 
 import { useTranslations } from 'next-intl';
 import { ChangeEvent, MouseEvent, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import Link from 'next/link';
 
 import { useAccountStatusContext } from '~/app/[locale]/(default)/account/(tabs)/_components/account-status-provider';
 import { ExistingResultType } from '~/client/util';
 import {
-  Checkboxes,
   createFieldName,
   CUSTOMER_FIELDS_TO_EXCLUDE,
-  DateField,
   FieldNameToFieldId,
   FieldWrapper,
-  MultilineText,
-  NumbersOnly,
   Password,
-  Picklist,
-  PicklistOrText,
-  RadioButtons,
   Text,
 } from '~/components/form-fields';
 import {
@@ -30,7 +22,6 @@ import {
   createPreSubmitCheckboxesValidationHandler,
   createPreSubmitPicklistValidationHandler,
   createRadioButtonsValidationHandler,
-  isAddressOrAccountFormField,
 } from '~/components/form-fields/shared/field-handlers';
 import { Button } from '~/components/ui/button';
 import { Checkbox, Field, Form, FormSubmit, Label } from '~/components/ui/form';
@@ -39,8 +30,6 @@ import { Message } from '~/components/ui/message';
 import { login } from '../_actions/login';
 import { registerCustomer } from '../_actions/register-customer';
 import { getRegisterCustomerQuery } from '../page-data';
-import { cn } from '~/lib/utils';
-import error from 'next/error';
 
 interface FormStatus {
   status: 'success' | 'error';
@@ -49,9 +38,6 @@ interface FormStatus {
 
 type CustomerFields = ExistingResultType<typeof getRegisterCustomerQuery>['customerFields'];
 type AddressFields = ExistingResultType<typeof getRegisterCustomerQuery>['addressFields'];
-type Countries = ExistingResultType<typeof getRegisterCustomerQuery>['countries'];
-type CountryCode = Countries[number]['code'];
-type CountryStates = Countries[number]['statesOrProvinces'];
 
 interface RegisterCustomerProps {
   addressFields: AddressFields;
@@ -65,24 +51,12 @@ interface SubmitMessages {
   };
 }
 
-interface PasswordFieldProps {
-  field: {
-    label: string;
-    required?: boolean;
-    entityId: string | number;
-    __typename?: string;
-  };
-  isValid: boolean;
-  name: string;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-}
-
 const SubmitButton = ({ messages }: SubmitMessages) => {
   const { pending } = useFormStatus();
 
   return (
     <Button
-      className="relative mt-8 w-fit items-center px-8 py-2"
+      className="create-account-button relative mt-8 w-fit items-center !bg-[#008BB7] px-8 py-2"
       loading={pending}
       loadingText={messages.submitting}
       variant="primary"
@@ -108,7 +82,6 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
   const [multiTextValid, setMultiTextValid] = useState<Record<string, boolean>>({});
 
   const { setAccountState } = useAccountStatusContext();
-
   const t = useTranslations('Register.Form');
 
   const handleTextInputValidation = (e: ChangeEvent<HTMLInputElement>) => {
@@ -163,11 +136,11 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
   };
 
   const onSubmit = async (formData: FormData) => {
-    const submit = await registerCustomer({ formData });
+    const submit = await registerCustomer(null, formData);
 
     if (submit.status === 'success') {
       setAccountState({ status: 'success' });
-      await login(formData);
+      await login(null, formData);
     }
 
     if (submit.status === 'error') {
@@ -183,7 +156,7 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
   return (
     <>
       {formStatus && (
-        <Message className="mb-8" variant={formStatus.status}>
+        <Message className="mb-8 rounded-[3px] border border-[#A71F23]" variant={formStatus.status}>
           <p>{formStatus.message}</p>
         </Message>
       )}
@@ -197,6 +170,10 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
           {customerFields
             .filter((field) => !CUSTOMER_FIELDS_TO_EXCLUDE.includes(field.entityId))
             .filter((field) => FieldNameToFieldId[field.entityId] !== 'confirmPassword')
+            .filter((field) => field.label !== 'Tax ID / Licence#')
+            .filter((field) => field.label !== 'license (Tax ID)')
+            .filter((field)=> field.label !== 'owner_name')
+            .filter((field)=> field.label !== 'Priority')
             .map((field) => {
               const fieldId = field.entityId;
               const fieldName = createFieldName(field, 'customer');
@@ -215,7 +192,7 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
                     </FieldWrapper>
                   );
 
-                case 'PasswordFormField': {
+                case 'PasswordFormField':
                   return (
                     <FieldWrapper fieldId={fieldId} key={fieldId}>
                       <Password
@@ -226,7 +203,6 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
                       />
                     </FieldWrapper>
                   );
-                }
 
                 default:
                   return null;
@@ -240,7 +216,7 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
             const fieldName = createFieldName(field, 'address');
             if (field.label === 'First Name' || field.label === 'Last Name') {
               switch (field.__typename) {
-                case 'TextFormField': {
+                case 'TextFormField':
                   return (
                     <FieldWrapper fieldId={fieldId} key={fieldId}>
                       <Text
@@ -251,8 +227,7 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
                       />
                     </FieldWrapper>
                   );
-                }
-                case 'PasswordFormField': {
+                case 'PasswordFormField':
                   return (
                     <FieldWrapper fieldId={fieldId} key={fieldId}>
                       <Password
@@ -263,7 +238,6 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
                       />
                     </FieldWrapper>
                   );
-                }
 
                 default:
                   return null;
@@ -278,9 +252,18 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
         </FormSubmit>
 
         <div className="remember-forgot-div mt-5">
-          <Field className="relative mt-2 inline-flex items-center space-y-2" name="remember-me">
-            <Checkbox aria-labelledby="remember-me" className='border-[#008bb7]' id="remember-me" name="remember-me" value="1" />
-            <div className="mt-0 flex">
+          <Field
+            className="relative mt-2 inline-flex w-full items-center space-y-2"
+            name="remember-me"
+          >
+            <Checkbox
+              aria-labelledby="remember-me"
+              className="border-[#008bb7]"
+              id="remember-me"
+              name="remember-me"
+              value="1"
+            />
+            <div className="mt-0 flex w-full justify-between gap-1 xl:justify-start">
               <Label
                 className="ml-2 mt-0 w-[15em] cursor-pointer space-y-2 pb-2 pl-1 text-left text-sm font-normal leading-6 tracking-[0.25px] md:my-0 md:w-auto"
                 htmlFor="remember-me"
@@ -288,21 +271,23 @@ export const RegisterCustomerForm = ({ addressFields, customerFields }: Register
               >
                 Keep me informed on sales, news, and special offers
               </Label>
-
-              <a
-                className="ml-2 text-center text-sm font-normal leading-6 tracking-tight text-[#008BB7]"
+              <Link
                 href="#"
+                className="xl:ml-2 text-center text-sm font-normal leading-6 tracking-tight text-[#008BB7]"
               >
                 Privacy Policy
-              </a>
+              </Link>
             </div>
           </Field>
         </div>
 
         <div className="mb-2 mt-2 md:mb-[30px] md:mt-[45px]">
-          <a className="font-open-sans cursor-pointer text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#353535] md:text-lg">
+          <Link
+            href="/login"
+            className="font-open-sans cursor-pointer text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#353535] md:text-lg"
+          >
             Sign in With an Existing Account
-          </a>
+          </Link>
         </div>
       </Form>
     </>

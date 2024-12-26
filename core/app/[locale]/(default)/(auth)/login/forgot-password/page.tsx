@@ -5,8 +5,6 @@ import { graphql } from '~/client/graphql';
 import { revalidate } from '~/client/revalidate-target';
 import { bypassReCaptcha } from '~/lib/bypass-recaptcha';
 
-import {Breadcrumbs as ComponentsBreadcrumbs} from '~/components/ui/breadcrumbs'
-
 import { ResetPasswordForm } from './_components/reset-password-form';
 import { ResetPasswordFormFragment } from './_components/reset-password-form/fragment';
 
@@ -36,21 +34,17 @@ export async function generateMetadata() {
 export default async function Reset() {
   const t = await getTranslations('Login.ForgotPassword');
 
-  const breadcrumbs: any = [{
-    label: "Forgot Password",
-    href: '#'
-  }];
-
   const { data } = await client.fetch({
     document: ResetPageQuery,
     fetchOptions: { next: { revalidate } },
   });
 
+  const recaptchaSettings = await bypassReCaptcha(data.site.settings?.reCaptcha);
+
   return (
-    <div className="reset-pass w-[100%] md:w-[calc((1116 / 1600) * 100vw)] flex flex-col gap-[20px] md:gap-[8px] justify-center mt-6 mx-[0px] md:mx-auto">
-      <ComponentsBreadcrumbs className="flex justify-center" breadcrumbs={breadcrumbs} />
-      <h2 className="reset-pass-head text-[24px] md:text-[34px] font-normal text-center tracking-[0.25px] text-[#353535]">{t('heading')}</h2>
-      <ResetPasswordForm reCaptchaSettings={bypassReCaptcha(data.site.settings?.reCaptcha)} />
+    <div className="mx-auto my-6 max-w-4xl">
+      <h2 className="mb-8 text-1xl !mt-12 lg:text-3xl font-[500] text-center">{t('heading')}</h2>
+      <ResetPasswordForm reCaptchaSettings={recaptchaSettings} />
     </div>
   );
 }
