@@ -13,6 +13,7 @@ import { ProductCardFragment } from '~/components/product-card/fragment';
 import { ProductCardCarousel } from '~/components/product-card-carousel';
 import { SearchForm } from '~/components/search-form';
 import { imageManagerImageUrl } from '~/lib/store-assets';
+import { getChannelIdFromSite } from '~/get-site-details';
 
 
 const NotFoundQuery = graphql(
@@ -38,6 +39,7 @@ export default async function NotFound() {
   const { data } = await client.fetch({
     document: NotFoundQuery,
     fetchOptions: { next: { revalidate } },
+    channelId: await getChannelIdFromSite(),
   });
 
   const featuredProducts = removeEdgesAndNodes(data.site.featuredProducts);

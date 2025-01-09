@@ -2,7 +2,7 @@ import { createClient } from '@bigcommerce/catalyst-client';
 import { headers } from 'next/headers';
 import { getLocale } from 'next-intl/server';
 
-import { getChannelIdFromLocale } from '../channels.config';
+import { getChannelIdFromLocale, getStoreFrontAPIToken } from '../channels.config';
 import { backendUserAgent } from '../userAgent';
 
 export const client = createClient({
@@ -29,7 +29,7 @@ export const client = createClient({
     try {
       const locale = await getLocale();
 
-      return getChannelIdFromLocale(locale) ?? defaultChannelId;
+      return await getChannelIdFromLocale(locale) ?? defaultChannelId;
     } catch {
       return defaultChannelId;
     }
@@ -48,4 +48,8 @@ export const client = createClient({
       }
     }
   },
+  getStoreFrontToken: async () => {
+    console.log('========test store=======', await getStoreFrontAPIToken() );
+    return await getStoreFrontAPIToken() ?? process.env.BIGCOMMERCE_STOREFRONT_TOKEN ?? '';
+  }
 });

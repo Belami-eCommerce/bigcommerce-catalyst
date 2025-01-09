@@ -2,6 +2,7 @@ import { getSessionCustomerAccessToken } from '~/auth';
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
 import { TAGS } from '~/client/tags';
+import { getChannelIdFromSite } from '~/get-site-details';
 
 export const PhysicalItemFragment = graphql(`
   fragment PhysicalItemFragment on CartPhysicalItem {
@@ -15,6 +16,24 @@ export const PhysicalItemFragment = graphql(`
     quantity
     productEntityId
     variantEntityId
+    couponAmount {
+      currencyCode
+      formatted
+      value
+    }
+    discountedAmount {
+      currencyCode
+      formatted
+      value
+    }
+    discounts {
+      discountedAmount {
+        currencyCode
+        formatted
+        value
+      }
+      entityId
+    }
     extendedListPrice {
       currencyCode
       value
@@ -74,6 +93,24 @@ export const DigitalItemFragment = graphql(`
     quantity
     productEntityId
     variantEntityId
+    couponAmount {
+      currencyCode
+      formatted
+      value
+    }
+    discountedAmount {
+      currencyCode
+      formatted
+      value
+    }
+    discounts {
+      discountedAmount {
+        currencyCode
+        formatted
+        value
+      }
+      entityId
+    }
     extendedListPrice {
       currencyCode
       value
@@ -163,6 +200,7 @@ export const getCart = async (cartId: string) => {
         tags: [TAGS.cart, TAGS.checkout],
       },
     },
+    channelId: await getChannelIdFromSite(),
   });
 
   return data;

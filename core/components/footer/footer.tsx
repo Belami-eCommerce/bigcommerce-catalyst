@@ -27,6 +27,8 @@ import { VisaIcon } from './payment-icons/visa';
 import { Link as CustomLink } from '~/components/link';
 
 import { imageManagerImageUrl } from '~/lib/store-assets';
+import { kv } from '~/lib/kv';
+import { getChannelIdFromSite } from '~/get-site-details';
 
 const socialIcons: Record<string, { icon: JSX.Element; link: string }> = {
   Pinterest: {
@@ -56,6 +58,7 @@ export const Footer = async () => {
   const { data: response } = await client.fetch({
     document: LayoutQuery,
     fetchOptions: customerAccessToken ? { cache: 'no-store' } : { next: { revalidate } },
+    channelId: await getChannelIdFromSite(), // Using default channel id
   });
 
   const data = readFragment(FooterFragment, response).site;

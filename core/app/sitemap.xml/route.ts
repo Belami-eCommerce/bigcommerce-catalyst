@@ -8,7 +8,7 @@ import { client } from '~/client';
 import { defaultLocale } from '~/i18n/routing';
 
 export const GET = async () => {
-  const sitemapIndex = await client.fetchSitemapIndex(getChannelIdFromLocale(defaultLocale));
+  const sitemapIndex = await client.fetchSitemapIndex(await getChannelIdFromLocale(defaultLocale));
 
   return new Response(sitemapIndex, {
     headers: {

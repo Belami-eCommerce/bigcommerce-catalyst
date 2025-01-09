@@ -27,6 +27,7 @@ import { Open_Sans, Roboto_Mono } from 'next/font/google';
 
 import Script from 'next/script';
 import { SiteVibesIntegration } from "~/belami/components/sitevibes";
+import { getChannelIdFromSite } from '~/get-site-details';
 
 const dm_serif_text = localFont({
   src: [
@@ -84,6 +85,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { data } = await client.fetch({
     document: RootLayoutMetadataQuery,
     fetchOptions: { next: { revalidate } },
+    channelId: await getChannelIdFromSite(), // Using default channel id
   });
 
   const storeName = data.site.settings?.storeName ?? '';

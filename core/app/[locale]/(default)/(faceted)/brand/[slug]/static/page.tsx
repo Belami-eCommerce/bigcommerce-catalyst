@@ -34,7 +34,7 @@ const getBrands = cache(async (variables: Variables = {}) => {
     document: BrandsQuery,
     variables,
     fetchOptions: { next: { revalidate: revalidateTarget } },
-    channelId: getChannelIdFromLocale(), // Using default channel id
+    channelId: await getChannelIdFromLocale(), // Using default channel id
   });
 
   return removeEdgesAndNodes(response.data.site.brands);

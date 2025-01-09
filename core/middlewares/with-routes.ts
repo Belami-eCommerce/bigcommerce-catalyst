@@ -1,6 +1,6 @@
 import { NextFetchEvent, NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-
+import { cookies } from 'next/headers';
 import { getSessionCustomerAccessToken } from '~/auth';
 import { client } from '~/client';
 import { graphql } from '~/client/graphql';
@@ -10,6 +10,8 @@ import { kvKey, STORE_STATUS_KEY } from '~/lib/kv/keys';
 import { kv } from '../lib/kv';
 
 import { type MiddlewareFactory } from './compose-middlewares';
+import { getSiteDataNoCache } from '~/db/get-site-data';
+import { getChannelIdFromSite } from '~/get-site-details';
 
 const GetRouteQuery = graphql(`
   query getRoute($path: String!) {
@@ -59,7 +61,7 @@ const getRoute = async (path: string, channelId?: string) => {
     document: GetRouteQuery,
     variables: { path },
     fetchOptions: { next: { revalidate } },
-    channelId,
+    channelId: await getChannelIdFromSite(),
   });
 
   return response.data.site.route;
@@ -80,6 +82,7 @@ const getRawWebPageContent = async (id: string) => {
   const response = await client.fetch({
     document: getRawWebPageContentQuery,
     variables: { id },
+    channelId: await getChannelIdFromSite(), // Using default channel id
   });
 
   const node = response.data.node;
@@ -105,7 +108,7 @@ const getStoreStatus = async (channelId?: string) => {
   const { data } = await client.fetch({
     document: GetStoreStatusQuery,
     fetchOptions: { next: { revalidate: 300 } },
-    channelId,
+    channelId: await getChannelIdFromSite(),
   });
 
   return data.site.settings?.status;
@@ -252,9 +255,87 @@ const getRouteInfo = async (request: NextRequest, event: NextFetchEvent) => {
   }
 };
 
+type SiteData = Awaited<ReturnType<typeof getSiteDataNoCache>>;
+
+export interface SiteDataCache {
+  siteData: SiteData;
+  expiryTime: number;
+}
+
+const SiteCacheSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  subdomain: z.string().nullable(),
+  customDomain: z.string().nullable(),
+  template: z.string(),
+  storeHash: z.string(),
+  channelId: z.string(),
+  accessToken: z.string(),
+  storeFrontAccessToken: z.string(),
+});
+
+let domain: string;
+let locale: string;
+let storeHash: string;
+let channelId: string;
+
+const SiteDataCacheSchema = z.object({
+  siteData: z.nullable(SiteCacheSchema),
+  expiryTime: z.number(),
+});
+
+const updateSiteDataCache = async (domain: string, event: NextFetchEvent): Promise<SiteDataCache> => {
+
+  const siteDataCache: SiteDataCache = {
+    siteData: await getSiteDataNoCache(domain),
+    expiryTime: Date.now() + 1000 * 60 * 30, // 30 minutes
+  };
+  console.log('========site data with routes=======', siteDataCache);
+  event.waitUntil(kv.set(`${process.env.KV_NAMESPACE}_${domain}_v3_sitedata`, siteDataCache));
+
+  return siteDataCache;
+};
+
+const getSiteData = async (domain: string, event: NextFetchEvent) => {
+  try {
+    let siteDataCache = await kv.get<SiteDataCache>(`${process.env.KV_NAMESPACE}_${domain}_v3_sitedata`);
+    if (siteDataCache && siteDataCache.expiryTime < Date.now()) {
+      event.waitUntil(updateSiteDataCache(domain, event));
+    } else if (!siteDataCache) {
+      siteDataCache = await updateSiteDataCache(domain, event);
+    }
+
+    const parsedSiteData = siteDataCache;
+
+    return {
+      siteData: parsedSiteData?.siteData?.[0] || undefined,
+    };
+
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error);
+
+    return {
+      siteData: undefined,
+    };
+  }
+};
+
 export const withRoutes: MiddlewareFactory = () => {
   return async (request, event) => {
     const locale = request.headers.get('x-bc-locale') ?? '';
+
+    domain = request.headers?.get('host')! || '';
+    console.log('========domain=======', domain);
+    const { siteData } = await getSiteData(decodeURIComponent(domain), event);
+    const cookieStore = await cookies();
+    cookieStore.set('domain', domain);
+    storeHash = siteData?.storeHash ?? process.env.BIGCOMMERCE_STORE_HASH ?? '';
+    channelId = siteData?.channelId ?? process.env.BIGCOMMERCE_CHANNEL_ID ?? '';
+
+    console.log('Store Hash inside WithRoutes middleware: ' + storeHash);
+    console.log('Channel ID inside WithRoutes middleware: ' + channelId);
+    
 
     const { route, status } = await getRouteInfo(request, event);
 

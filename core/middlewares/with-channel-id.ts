@@ -3,9 +3,9 @@ import { getChannelIdFromLocale } from '~/channels.config';
 import { type MiddlewareFactory } from './compose-middlewares';
 
 export const withChannelId: MiddlewareFactory = (next) => {
-  return (request, event) => {
+  return async (request, event) => {
     const locale = request.headers.get('x-bc-locale') ?? '';
-    const channelId = getChannelIdFromLocale(locale) ?? '';
+    const channelId = await getChannelIdFromLocale(locale) ?? '';
 
     request.headers.set('x-bc-channel-id', channelId);
 

@@ -22,6 +22,7 @@ interface Config<FetcherRequestInit extends RequestInit = RequestInit> {
   beforeRequest?: (
     fetchOptions?: FetcherRequestInit,
   ) => Promise<Partial<FetcherRequestInit> | undefined> | Partial<FetcherRequestInit> | undefined;
+  getStoreFrontToken?: () => Promise<string | undefined>;
 }
 
 interface BigCommerceResponseError {
@@ -45,6 +46,7 @@ class Client<FetcherRequestInit extends RequestInit = RequestInit> {
   private beforeRequest?: (
     fetchOptions?: FetcherRequestInit,
   ) => Promise<Partial<FetcherRequestInit> | undefined> | Partial<FetcherRequestInit> | undefined;
+  private getStoreFrontToken?: () => Promise<Partial<string> | undefined>;
 
   private trustedProxySecret = process.env.BIGCOMMERCE_TRUSTED_PROXY_SECRET;
 
@@ -59,6 +61,7 @@ class Client<FetcherRequestInit extends RequestInit = RequestInit> {
       ? config.getChannelId
       : (defaultChannelId) => defaultChannelId;
     this.beforeRequest = config.beforeRequest;
+    this.getStoreFrontToken = config.getStoreFrontToken;
   }
 
   // Overload for documents that require variables
@@ -99,12 +102,13 @@ class Client<FetcherRequestInit extends RequestInit = RequestInit> {
     const graphqlUrl = await this.getGraphQLEndpoint(channelId);
     const { headers: additionalFetchHeaders = {}, ...additionalFetchOptions } =
       (await this.beforeRequest?.(fetchOptions)) ?? {};
-
+      let storefrontTokenData = await this.getStoreFrontToken?.() || this.config.storefrontToken;
+      console.log(channelId,'========storefrontTokenData===client graphql====', storefrontTokenData);
     const response = await fetch(graphqlUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.storefrontToken}`,
+        Authorization: `Bearer ${storefrontTokenData}`,
         'User-Agent': this.backendUserAgent,
         ...(customerAccessToken && { 'X-Bc-Customer-Access-Token': customerAccessToken }),
         ...(this.trustedProxySecret && { 'X-BC-Trusted-Proxy-Secret': this.trustedProxySecret }),

@@ -32,7 +32,7 @@ const getCategoryTree = cache(async (variables: Variables = {}) => {
     document: CategoryTreeQuery,
     variables,
     fetchOptions: { next: { revalidate: revalidateTarget } },
-    channelId: getChannelIdFromLocale(), // Using default channel id
+    channelId: await getChannelIdFromLocale(), // Using default channel id
   });
 
   return response.data.site.categoryTree;

@@ -11,6 +11,7 @@ import { locales } from '~/i18n/routing';
 
 import ProductPage from '../page';
 import { getProduct } from '../page-data';
+import { getChannelIdFromSite } from '~/get-site-details';
 
 export default ProductPage;
 
@@ -42,7 +43,7 @@ const getFeaturedProducts = cache(async ({ first = 12 }: Options = {}) => {
     fetchOptions: customerAccessToken
       ? { cache: 'no-store' }
       : { next: { revalidate: revalidateTarget } },
-    channelId: getChannelIdFromLocale(), // Using default channel id
+    channelId: await getChannelIdFromSite(), // Using default channel id
   });
 
   return removeEdgesAndNodes(response.data.site.featuredProducts);

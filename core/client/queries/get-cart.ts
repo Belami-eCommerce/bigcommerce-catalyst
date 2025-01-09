@@ -5,6 +5,7 @@ import { getSessionCustomerAccessToken } from '~/auth';
 import { client } from '..';
 import { graphql } from '../graphql';
 import { TAGS } from '../tags';
+import { getChannelIdFromSite } from '~/get-site-details';
 
 const MoneyFieldFragment = graphql(`
   fragment MoneyFieldFragment on Money {
@@ -146,7 +147,7 @@ export const getCart = cache(async (cartId?: string, channelId?: string) => {
         tags: [TAGS.cart],
       },
     },
-    channelId,
+    channelId: await getChannelIdFromSite(),
   });
 
   const cart = response.data.site.cart;

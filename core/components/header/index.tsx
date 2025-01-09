@@ -25,6 +25,7 @@ import { imageManagerImageUrl } from '~/lib/store-assets';
 
 import { getSessionUserDetails } from '~/auth';
 import { get } from 'http';
+import { getChannelIdFromSite } from '~/get-site-details';
 interface Props {
   cart: ReactNode;
 }
@@ -42,6 +43,7 @@ export const Header = async ({ cart }: Props) => {
   const { data: response } = await client.fetch({
     document: LayoutQuery,
     fetchOptions: customerAccessToken ? { cache: 'no-store' } : { next: { revalidate } },
+    channelId: await getChannelIdFromSite(), // Using default channel id
   });
 
   const data = readFragment(HeaderFragment, response).site;

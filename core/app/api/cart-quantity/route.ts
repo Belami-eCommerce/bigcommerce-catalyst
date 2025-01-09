@@ -12,7 +12,7 @@ export const GET = async (request: NextRequest) => {
   const locale = searchParams.get('locale') ?? undefined;
 
   if (cartId) {
-    const cart = await getCart(cartId, getChannelIdFromLocale(locale));
+    const cart = await getCart(cartId, await getChannelIdFromLocale(locale));
 
     return NextResponse.json({ count: cart?.lineItems.totalQuantity ?? 0 });
   }
