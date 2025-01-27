@@ -20,6 +20,7 @@ import '~/makeswift/components/sticky-sidebar-layout/sticky-sidebar-layout.makes
 import '~/makeswift/components/section-layout/section-layout.makeswift';
 import '~/makeswift/components/css-theme/register';
 import '~/makeswift/components/not-found/register';
+import '~/makeswift/components/site-header/register';
 
 import '~/belami/components/card-carousel/card-carousel.makeswift';
 import '~/belami/components/product-card-carousel/product-card-carousel.makeswift';
