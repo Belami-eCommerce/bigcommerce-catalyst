@@ -2,9 +2,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { PropsWithChildren, Suspense } from 'react';
 
 import { Footer } from '~/components/footer/footer';
-import { Header, HeaderSkeleton } from '~/components/header';
-import { Cart } from '~/components/header/cart';
-//import { LocaleType } from '~/i18n/routing';
+import { SiteHeader } from '~/makeswift/components/site-header';
 import SalesBuddyPage from './sales-buddy/page';
 
 import { cookies, headers } from 'next/headers';
@@ -40,9 +38,7 @@ export default async function DefaultLayout({ params, children }: Props) {
         ? <ReferrerId sid={Number(process.env.SITE_CONFIG_ID ?? 0)} referrerId={referrerIdCookie?.value || null} ip={ip} ua={ua} referrer={referrer} />
         : null
       }
-      <Suspense fallback={<HeaderSkeleton />}>
-        <Header cart={<Cart />} />
-      </Suspense>
+      <SiteHeader />
       <main className="main-slider mt-[2em] md:mt-0">
         {children}
       </main>
