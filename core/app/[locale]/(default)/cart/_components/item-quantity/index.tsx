@@ -182,6 +182,7 @@ export const ItemQuantity = ({ product, accessories }: { product: Product; acces
       let status;
       if (product?.ProductType === 'custom') {
         status = await updateProductQuantity(product?.cartId, productQuantity, product?.sku);
+        setIsLoading(false);
       } else {
         const response = await updateItemQuantity({
           lineItemEntityId: entityId,
@@ -191,6 +192,7 @@ export const ItemQuantity = ({ product, accessories }: { product: Product; acces
           variantEntityId,
         });
         status = response.status;
+        setIsLoading(false);
       }
 
       if (status === 'error') {

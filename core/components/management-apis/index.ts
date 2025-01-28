@@ -356,8 +356,9 @@ export const GetProductImagesById = async (id: Number) => {
     console.error(error);
   }
 };
-export const getCommonSettingByBrandChannel = async (brand) => {
+export const getCommonSettingByBrandChannel = async (brand:any) => {
   const commonSettingUrl=process?.env?.COMMON_SETTING_URL
+  
   const postData = {
     brand_ids: brand,
     channel_id: process?.env?.BIGCOMMERCE_CHANNEL_ID,
@@ -380,4 +381,32 @@ export const getCommonSettingByBrandChannel = async (brand) => {
       throw error; // Re-throw the error to handle it in the calling component
     }
   
+};
+
+export const CommonSettingPriceMaxLogicApi = async (activationCode:any,brand_ids:any) => {
+  const commonSettingUrl = process?.env?.COMMON_SETTING_URL;
+  if (!commonSettingUrl) {
+    return { output: [] };
+  }
+  const postData = {
+    activation_code: activationCode,
+    brand_ids: brand_ids,
+  };  
+  try {
+    const response = await fetch(`${commonSettingUrl}api/get-price-max`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postData),
+      cache: 'no-store',
+      
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw error; // Re-throw the error to handle it in the calling component
+  }
 };

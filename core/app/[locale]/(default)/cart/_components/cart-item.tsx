@@ -63,6 +63,24 @@ const PhysicalItemFragment = graphql(`
         }
       }
     }
+      catalogProductWithOptionSelections {
+      prices {
+        retailPrice {
+          currencyCode
+          value
+          formatted
+          ...MoneyFields
+        }
+        salePrice{
+          currencyCode
+          value
+        }
+        basePrice{
+          currencyCode
+          value
+        }
+      }
+    }
     extendedListPrice {
       currencyCode
       value
@@ -274,11 +292,12 @@ export const CartItem = async ({ brandId, currencyCode, product, deleteIcon, car
     discountPriceText = discountedPrice + '% Off';
   }
   let productSKU: string = retrieveMpnData(product, product?.productEntityId, product?.variantEntityId);
+  // no_ship_canada_message  
   return (
     <li className="mb-[24px] border border-gray-200">
       {getAllCommonSettinngsValues.hasOwnProperty(brandId) && getAllCommonSettinngsValues?.[brandId]?.no_ship_canada &&
         <div className='bg-[#E7F5F8] w-full flex justify-center'>
-          <NoShipCanada description={'Canadian shipping note:This product cannot ship to Canada'} />
+          <NoShipCanada description={getAllCommonSettinngsValues?.[brandId]?.no_ship_canada_message} />
         </div>
       }
       <div className="">
@@ -429,28 +448,55 @@ export const CartItem = async ({ brandId, currencyCode, product, deleteIcon, car
                 {/* Desktop layout (unchanged) */}
                 <div className="cart-deleteIcon relative flex flex-col gap-0 [&_.cart-item-delete]:absolute [&_.cart-item-quantity]:mt-5 [&_.cart-item-quantity]:sm:mt-0 [&_.cart-item-delete]:top-[50px] [&_.cart-item-delete]:right-0 [&_.cart-item-delete]:sm:static text-right md:items-end sm:gap-2">
                   <RemoveItem currency={currencyCode} product={product} deleteIcon={deleteIcon} />
-                  <div className="mb-0">
-                    <div className="flex items-center gap-[3px] text-[14px] font-normal leading-[24px] tracking-[0.25px] text-[#353535]">
-                      {product.originalPrice.value &&
-                        product.originalPrice.value !== product.listPrice.value ? (
-                        <p className="line-through">
-                          {format.number(product?.originalPrice?.value * product?.quantity, {
+                  {product.hasOwnProperty('activation_sale_price') ?
+                  (
+                      <div className="mb-0">
+                        <p className="text-left sm:text-right">
+                          {format.number(product?.activation_sale_price?.value * product?.quantity, {
                             style: 'currency',
                             currency: currencyCode,
                           })}
                         </p>
-                      ) : null}
-                      <p className="text-[12px] font-normal leading-[18px] tracking-[0.4px] text-[#5C5C5C]">
-                        {discountPriceText}
-                      </p>
-                    </div>
-                    <p className="text-left sm:text-right">
-                      {format.number(product?.extendedSalePrice?.value, {
-                        style: 'currency',
-                        currency: currencyCode,
-                      })}
-                    </p>
-                  </div>
+                        <div className="flex items-center gap-[3px] text-[14px] font-normal leading-[24px] tracking-[0.25px] text-[#353535]">
+                            <p className="line-through">
+                                {format.number(product.activation_sale_price?.original_price * product?.quantity, {
+                                style: 'currency',
+                                currency: currencyCode,
+                              })}
+                            </p>
+                          <p className="text-[12px] font-normal leading-[18px] tracking-[0.4px] text-[#5C5C5C]">
+                            {product.activation_sale_price?.discount}% Off
+                          </p>
+                        </div>
+                        
+                      </div>
+                  )
+                  :
+                  (
+                      <div className="mb-0">
+                        <div className="flex items-center gap-[3px] text-[14px] font-normal leading-[24px] tracking-[0.25px] text-[#353535]">
+                          {product.originalPrice.value &&
+                            product.originalPrice.value !== product.listPrice.value ? (
+                            <p className="line-through">
+                              {format.number(product?.originalPrice?.value * product?.quantity, {
+                                style: 'currency',
+                                currency: currencyCode,
+                              })}
+                            </p>
+                          ) : null}
+                          <p className="text-[12px] font-normal leading-[18px] tracking-[0.4px] text-[#5C5C5C]">
+                            {discountPriceText}
+                          </p>
+                        </div>
+                        <p className="text-left sm:text-right">
+                          {format.number(product?.extendedSalePrice?.value, {
+                            style: 'currency',
+                            currency: currencyCode,
+                          })}
+                        </p>
+                      </div>
+                  )
+                  }                  
                   <ItemQuantity product={product} />
                 </div>
               </div>
@@ -510,7 +556,7 @@ export const CartItem = async ({ brandId, currencyCode, product, deleteIcon, car
                           {item.originalPrice.value &&
                             item.originalPrice.value !== item.listPrice.value ? (
                             <p className="flex items-center tracking-[0.25px] line-through">
-                              {format.number(item.originalPrice.value * item.quantity, {
+                             --- {format.number(item.originalPrice.value * item.quantity, {
                                 style: 'currency',
                                 currency: currencyCode,
                               })}

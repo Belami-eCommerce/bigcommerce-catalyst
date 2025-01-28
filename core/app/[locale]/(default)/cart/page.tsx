@@ -26,7 +26,7 @@ import CartProductComponent from '../sales-buddy/common-components/_components/C
 import { get_cart_price_adjuster_data } from '../sales-buddy/_actions/get-product-by-entityid';
 import ScrollButton from './_components/ScrollButton';
 import { NoShipCanada } from '../product/[slug]/_components/belami-product-no-shipping-canada';
-import { commonSettinngs } from '~/components/common-functions';
+import { ChangePriceBasedOnActivationCodeAndShow, commonSettinngs } from '~/components/common-functions';
 import { zeroTaxCalculation } from '~/components/common-functions';
 
 const CartPageQuery = graphql(
@@ -65,7 +65,7 @@ export default async function Cart() {
 
   const cartId = cookieStore.get('cartId')?.value;
   const cookie_agent_login_status = cookieStore.get('agent_login')?.value;
-
+  const ActivationUrlCode = cookieStore.get('activation_code')?.value
   
 
   if (!cartId) {
@@ -175,7 +175,12 @@ export default async function Cart() {
   var getBrandIds = lineItems?.map((item: any) => {
     return item?.baseCatalogProduct?.brand?.entityId;
   });
-  var getAllCommonSettinngsValues =await commonSettinngs(getBrandIds)
+  var getAllCommonSettinngsValues =await commonSettinngs([getBrandIds])
+  // no_ship_canada_message
+  const UpdateAndShowUrlCodeActivationPrice = await ChangePriceBasedOnActivationCodeAndShow(updatedLineItemWithoutAccessories, ActivationUrlCode, getBrandIds)
+  
+  console.log(updatedLineItemWithoutAccessories);
+  
 
   let checkZeroTax: any = await zeroTaxCalculation(data.site);
   
@@ -225,19 +230,19 @@ export default async function Cart() {
       <div className="cart-right-side-details px-18 w-full pb-0 md:grid md:grid-cols-2 md:!gap-[6rem] lg:grid-cols-3 [@media_(min-width:1200px)]:pb-[40px]">
         
         <ul className="cart-details-item col-span-2 lg:w-full">
-          {updatedLineItemWithoutAccessories.map((product: any ) => (
-            <CartItem
-              brandId={product?.baseCatalogProduct?.brand?.entityId}
-              currencyCode={cart.currencyCode}
-              key={product.entityId}
-              product={product}
-              deleteIcon={deleteIcon}
-              cartId={cart?.entityId}
-              priceAdjustData={product_data_in_cart?.physical_items?.[product?.entityId]}
-              ProductType={"product"}
-              cookie_agent_login_status={cookie_agent_login_status  === 'true' ? true : false}
-              getAllCommonSettinngsValues={getAllCommonSettinngsValues}
-            />
+          {UpdateAndShowUrlCodeActivationPrice.map((product: any ) => (
+              <CartItem
+                brandId={product?.baseCatalogProduct?.brand?.entityId}
+                currencyCode={cart.currencyCode}
+                key={product.entityId}
+                product={product}
+                deleteIcon={deleteIcon}
+                cartId={cart?.entityId}
+                priceAdjustData={product_data_in_cart?.physical_items?.[product?.entityId]}
+                ProductType={"product"}
+                cookie_agent_login_status={cookie_agent_login_status === 'true' ? true : false}
+                getAllCommonSettinngsValues={getAllCommonSettinngsValues}
+              />
           ))}
           {
             cookie_agent_login_status === 'true' &&

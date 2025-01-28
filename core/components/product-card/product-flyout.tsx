@@ -175,6 +175,8 @@ export const ProductFlyout = ({
 
   
 
+  // console.log(product);
+  
   return (
     <>
       <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -255,7 +257,32 @@ export const ProductFlyout = ({
                       </div>
                     );
                   })}
-                  <div className="md:flex-row">
+                    {product.prices.activation_sale_price  ? (
+                  <div className='md:flex-row'>
+                      
+                      <>
+                        <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
+                          {format.number(product.prices?.activation_sale_price?.value, {
+                            style: 'currency',
+                            currency: product.prices?.activation_sale_price?.currencyCode,
+                          })}
+                        </span>
+                        <span className="text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through">
+                          {format.number(product.prices?.activation_sale_price?.original_price, {
+                            style: 'currency',
+                            currency: product.prices.price.currencyCode,
+                          })}
+                        </span>
+                        {<span className="text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
+                          Save{' '}
+                          {Number(product?.prices?.activation_sale_price?.discount)}%
+                        </span>}
+                      </>
+                      
+
+                  </div>
+                    ):
+                  (<div className="md:flex-row">
                     {productData?.originalPrice?.value &&
                     productData?.selectedOptions?.length === 0 &&
                     productData?.originalPrice?.value !== productData?.listPrice?.value ? (
@@ -275,6 +302,7 @@ export const ProductFlyout = ({
                       </div>
                     ) : null}
                   </div>
+                  )}
                   <InputPlusMinus
                     product="true"
                     isLoading={isLoading}
@@ -282,6 +310,7 @@ export const ProductFlyout = ({
                     productData={productData}
                   />
                 </div>
+                  
               </Dialog.Content>
               )}
               

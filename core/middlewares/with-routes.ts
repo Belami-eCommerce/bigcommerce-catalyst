@@ -10,6 +10,7 @@ import { kvKey, STORE_STATUS_KEY } from '~/lib/kv/keys';
 import { kv } from '../lib/kv';
 
 import { type MiddlewareFactory } from './compose-middlewares';
+import { withActivationCode } from './with-activation-code';
 
 const GetRouteQuery = graphql(`
   query getRoute($path: String!) {
@@ -216,45 +217,47 @@ const clearLocaleFromPath = (path: string, locale: string) => {
 const getRouteInfo = async (request: NextRequest, event: NextFetchEvent) => {
   const locale = request.headers.get('x-bc-locale') ?? '';
   const channelId = request.headers.get('x-bc-channel-id') ?? '';
-
-  try {
-    const pathname = clearLocaleFromPath(request.nextUrl.pathname, locale);
-
-    let [routeCache, statusCache] = await kv.mget<RouteCache | StorefrontStatusCache>(
-      kvKey(pathname, channelId),
-      kvKey(STORE_STATUS_KEY, channelId),
-    );
-
-    // If caches are old, update them in the background and return the old data (SWR-like behavior)
-    // If cache is missing, update it and return the new data, but write to KV in the background
-    if (statusCache && statusCache.expiryTime < Date.now()) {
-      event.waitUntil(updateStatusCache(channelId, event));
-    } else if (!statusCache) {
-      statusCache = await updateStatusCache(channelId, event);
-    }
-
-    if (routeCache && routeCache.expiryTime < Date.now()) {
-      event.waitUntil(updateRouteCache(pathname, channelId, event));
-    } else if (!routeCache) {
-      routeCache = await updateRouteCache(pathname, channelId, event);
-    }
-
-    const parsedRoute = RouteCacheSchema.safeParse(routeCache);
-    const parsedStatus = StorefrontStatusCacheSchema.safeParse(statusCache);
-
-    return {
-      route: parsedRoute.success ? parsedRoute.data.route : undefined,
-      status: parsedStatus.success ? parsedStatus.data.status : undefined,
-    };
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(error);
-
-    return {
-      route: undefined,
-      status: undefined,
-    };
+  if (request.nextUrl.searchParams.get('act')){
+    withActivationCode(request.nextUrl.searchParams.get('act'));
   }
+    try {
+      const pathname = clearLocaleFromPath(request.nextUrl.pathname, locale);
+
+      let [routeCache, statusCache] = await kv.mget<RouteCache | StorefrontStatusCache>(
+        kvKey(pathname, channelId),
+        kvKey(STORE_STATUS_KEY, channelId),
+      );
+
+      // If caches are old, update them in the background and return the old data (SWR-like behavior)
+      // If cache is missing, update it and return the new data, but write to KV in the background
+      if (statusCache && statusCache.expiryTime < Date.now()) {
+        event.waitUntil(updateStatusCache(channelId, event));
+      } else if (!statusCache) {
+        statusCache = await updateStatusCache(channelId, event);
+      }
+
+      if (routeCache && routeCache.expiryTime < Date.now()) {
+        event.waitUntil(updateRouteCache(pathname, channelId, event));
+      } else if (!routeCache) {
+        routeCache = await updateRouteCache(pathname, channelId, event);
+      }
+
+      const parsedRoute = RouteCacheSchema.safeParse(routeCache);
+      const parsedStatus = StorefrontStatusCacheSchema.safeParse(statusCache);
+
+      return {
+        route: parsedRoute.success ? parsedRoute.data.route : undefined,
+        status: parsedStatus.success ? parsedStatus.data.status : undefined,
+      };
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(error);
+
+      return {
+        route: undefined,
+        status: undefined,
+      };
+    }
 };
 
 export const withRoutes: MiddlewareFactory = () => {
@@ -262,6 +265,8 @@ export const withRoutes: MiddlewareFactory = () => {
     const locale = request.headers.get('x-bc-locale') ?? '';
 
     const { route, status } = await getRouteInfo(request, event);
+    // console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", request.url.search('act'));
+    
 
     if (status === 'MAINTENANCE') {
       // 503 status code not working - https://github.com/vercel/next.js/issues/50155

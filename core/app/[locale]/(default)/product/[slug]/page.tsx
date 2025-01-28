@@ -21,7 +21,8 @@ import { CollectionProducts } from '~/belami/components/product';
 import { SiteVibesReviews } from '~/belami/components/sitevibes';
 import { getRelatedProducts, getCollectionProducts } from '~/belami/lib/fetch-algolia-products';
 import { getWishlists } from '../../account/(tabs)/wishlists/page-data';
-import { commonSettinngs } from '~/components/common-functions';
+import { ChangePriceBasedOnActivationCodeAndShow, ChangePriceBasedOnActivationCodeAndShowPDP, CommonSettingPriceMaxLogic, commonSettinngs } from '~/components/common-functions';
+import { cookies } from 'next/headers';
 
 interface Props {
   params: Promise<{ slug: string; locale: string }>;
@@ -45,6 +46,12 @@ interface MetaField {
   key: string;
   value: string;
   namespace: string;
+}
+
+async function getActivationCodeFromCookie(){
+  const cookieStore = await cookies();
+  const activationCode = cookieStore?.get('activation_code')?.value;
+  return activationCode
 }
 
 function getOptionValueIds({ searchParams }: { searchParams: Awaited<Props['searchParams']> }) {
@@ -225,6 +232,13 @@ export default async function ProductPage(props: Props) {
     const productImages = removeEdgesAndNodes(product.images);
     var brandId = product?.brand?.entityId;
     var CommonSettinngsValues = await commonSettinngs([brandId])
+
+    var ActivationCouponCode =await getActivationCodeFromCookie()
+    var UpdateAndShowUrlCodeActivationPrice = await ChangePriceBasedOnActivationCodeAndShowPDP(product, ActivationCouponCode,[brandId])
+    if (UpdateAndShowUrlCodeActivationPrice){
+      product.prices.activation_sale_price = UpdateAndShowUrlCodeActivationPrice
+    }    
+    
     return (
       <div className="products-detail-page mx-auto max-w-[93.5%] pt-8">
         <ProductProvider getMetaFields={productMetaFields}>

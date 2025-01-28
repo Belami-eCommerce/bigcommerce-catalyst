@@ -1,5 +1,5 @@
 import { removeEdgesAndNodes } from '@bigcommerce/catalyst-client';
-import { getCommonSettingByBrandChannel, GetProductMetaFields, GetProductVariantMetaFields } from '../management-apis';
+import { CommonSettingPriceMaxLogicApi, getCommonSettingByBrandChannel, GetProductMetaFields, GetProductVariantMetaFields } from '../management-apis';
 
 interface MetaField {
   entityId: number;
@@ -330,11 +330,78 @@ export const getMetaFieldsByProduct = async (
 };
 
 
-export const commonSettinngs = async(brand_ids) =>{
-    // 47, 111,
+export const commonSettinngs = async(brand_ids:any) =>{
+    // 47, 111,    
     var res = await getCommonSettingByBrandChannel(brand_ids);        
     return res.output;
 }
+export const CommonSettingPriceMaxLogic=async(activationCode: any,skus: any)=>{
+  
+  var res = await CommonSettingPriceMaxLogicApi(activationCode,skus)
+  return res.output;
+}
+
+
+export const ChangePriceBasedOnActivationCodeAndShowPDP =async (product: any, ActivationUrlCode:string, brandId:any) => {
+  console.log('ActivationUrlCode, [brandId]----', ActivationUrlCode, [brandId]);
+  
+  var getDiscountValue = await CommonSettingPriceMaxLogic(ActivationUrlCode, [brandId]);
+  var DiscountValueObject =
+    getDiscountValue.length > 0 &&
+    getDiscountValue?.find((item: any) => item?.bc_brand_ids?.includes(String(brandId)));
+  if (ActivationUrlCode && DiscountValueObject && product.prices) {
+    const discount = Number(DiscountValueObject?.discount) || 0; 
+    const value =
+      product?.prices?.salePrice?.value ??
+      product?.prices?.basePrice?.value ??
+      product?.prices?.price?.value;
+    const numericValue = Number(value) || 0; 
+    const discountedValue = numericValue - (discount * numericValue) / 100;
+    const result = {
+      original_price: numericValue,
+      value: discountedValue,
+      currencyCode: product?.prices?.price?.currencyCode || 'USD', 
+      discount: discount,
+    };
+    return result;
+  }
+  return
+};
+export const ChangePriceBasedOnActivationCodeAndShow = async (
+  product: any | any[],
+  ActivationUrlCode: string,
+  brandId: any,
+) => {
+  const getDiscountValue = await CommonSettingPriceMaxLogic(ActivationUrlCode, brandId);
+ const DiscountValueObject = getDiscountValue?.length > 0 ? getDiscountValue?.[0]?.['bc_brand_ids'] : null;
+  const calculatePrice = (productItem: any) => {
+    if (DiscountValueObject?.includes(String(productItem.baseCatalogProduct.brand.entityId))) {
+      if (ActivationUrlCode && DiscountValueObject && productItem?.originalPrice) {
+        const discount = Number(getDiscountValue?.[0]?.["discount"]) || 0; // Default to 0 if undefined
+        const value = productItem?.originalPrice.value;
+        const numericValue = Number(value) || 0; 
+        const discountedValue = numericValue - (discount * numericValue) / 100;
+        productItem.activation_sale_price = {
+          original_price: numericValue,
+          value: discountedValue,
+          currencyCode: productItem?.prices?.price?.currencyCode || 'USD', // Default to 'USD'
+          discount: discount,
+        };
+        return productItem;
+      }
+    }
+      return productItem;
+  };
+  if (Array.isArray(product)) {
+    return product.map((item) => calculatePrice(item));
+  } else {
+    return calculatePrice(product);
+  }
+};
+
+
+
+
 export const retrieveMpnData = (product: any, productid: Number, variantId: Number) => {
   if(product?.baseCatalogProduct?.variants) {
     let productVariants: any = removeEdgesAndNodes(product?.baseCatalogProduct?.variants);
