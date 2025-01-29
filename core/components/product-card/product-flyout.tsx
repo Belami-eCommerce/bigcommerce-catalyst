@@ -72,6 +72,7 @@ const getVariantProductInfo = async (metaData: any) => {
                   mpn: item?.mpn,
                   sku: item?.sku,
                   name: optionValues,
+                  purchasing_disabled:item?.purchasing_disabled,
                   selectedOptions: item?.selectedOption,
                 });
               }
@@ -173,10 +174,7 @@ export const ProductFlyout = ({
     }, [productId, productQtyData]);
   }
 
-  
 
-  // console.log(product);
-  
   return (
     <>
       <Dialog.Root open={open} onOpenChange={setOpen}>

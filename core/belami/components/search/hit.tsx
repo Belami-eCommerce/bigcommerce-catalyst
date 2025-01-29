@@ -19,8 +19,13 @@ import coastalBadge from '~/public/badges/coastal.svg';
 
 import { useFormatter } from 'next-intl';
 
+export { ProductPrice } from './product-price';
+
 import { ReviewSummary } from '~/belami/components/reviews';
 import { Compare } from '~/components/ui/product-card/compare';
+import WishlistAddToList from '~/app/[locale]/(default)/account/(tabs)/wishlists/wishlist-add-to-list/wishlist-add-to-list';
+import { useWishlists } from '~/app/[locale]/(default)/account/(tabs)/wishlists/wishlist-add-to-list/hooks';
+import { ProductPrice } from './product-price';
 
 const useAsyncMode = process.env.NEXT_PUBLIC_USE_ASYNC_MODE === 'true';
 
@@ -56,11 +61,13 @@ type HitProps = {
     free_shipping: boolean;
     newPrice: number;
     description: string;
-    objectID: number;
+    objectID: number | string;
     reviews_rating_sum: number;
     reviews_count: number;
     metafields: any;
     variants: any;
+    _tags: string[]; // Add this
+    sku: string; // Add this
   }>;
   sendEvent?: any;
   insights?: any;
@@ -93,8 +100,8 @@ function findPromotionWithBrand(promotions: any[], brandId: number): any | null 
 */
 
 interface Promotion {
-  name: string,
-  redemption_type: string,
+  name: string;
+  redemption_type: string;
   rules: {
     action: {
       cart_items?: {
@@ -121,7 +128,11 @@ function sortPromotions(promotions: Promotion[]): Promotion[] {
   return promotions.sort((a, b) => {
     const getDiscountValue = (promotion: Promotion, type: string, discountType: string): number => {
       for (const rule of promotion.rules) {
-        if ((type === 'cart_items' || type === 'cart_value') && (discountType === 'percentage_amount' || discountType === 'fixed_amount') && rule.action[type]?.discount?.[discountType]) {
+        if (
+          (type === 'cart_items' || type === 'cart_value') &&
+          (discountType === 'percentage_amount' || discountType === 'fixed_amount') &&
+          rule.action[type]?.discount?.[discountType]
+        ) {
           return parseFloat(rule.action[type].discount[discountType]);
         }
       }
@@ -152,9 +163,13 @@ function sortPromotions(promotions: Promotion[]): Promotion[] {
   });
 }
 
-function findApplicablePromotion(promotions: any[], productId: number, brandId: number, categoryIds: number[]): any | null {
+function findApplicablePromotion(
+  promotions: any[],
+  productId: number,
+  brandId: number,
+  categoryIds: number[],
+): any | null {
   const applicablePromotions = promotions.filter((promotion: any) => {
-
     // 1. CHECKING STRICT RULES FIRST (without "and" or "or")
 
     const hasNotConditions = promotion.rules.some(
@@ -162,31 +177,32 @@ function findApplicablePromotion(promotions: any[], productId: number, brandId: 
         rule.condition?.cart &&
         rule.condition?.cart.items &&
         rule.condition?.cart.items.not &&
-        rule.condition?.cart.items.not.some((notRule: any) => 
-          (notRule.brands && notRule.brands.includes(brandId)) || 
-          (notRule.categories && notRule.categories.some((category: number) => categoryIds.includes(category))) || 
-          (notRule.products && notRule.products.includes(productId))
-      )
+        rule.condition?.cart.items.not.some(
+          (notRule: any) =>
+            (notRule.brands && notRule.brands.includes(brandId)) ||
+            (notRule.categories &&
+              notRule.categories.some((category: number) => categoryIds.includes(category))) ||
+            (notRule.products && notRule.products.includes(productId)),
+        ),
     );
     if (hasNotConditions) return false;
 
     const hasConditions = promotion.rules.some(
       (rule: any) =>
         rule.condition?.cart &&
-        (
-          !rule.condition?.cart.items || 
+        (!rule.condition?.cart.items ||
           (rule.condition?.cart.items &&
-            (!rule.condition?.cart.items.brands || 
+            (!rule.condition?.cart.items.brands ||
               (rule.condition?.cart.items.brands &&
-              rule.condition?.cart.items.brands.includes(brandId))) && 
-            (!rule.condition?.cart.items.categories || 
+                rule.condition?.cart.items.brands.includes(brandId))) &&
+            (!rule.condition?.cart.items.categories ||
               (rule.condition?.cart.items.categories &&
-              rule.condition?.cart.items.categories.some((category: number) => categoryIds.includes(category)))) &&
-            (!rule.condition?.cart.items.products || 
+                rule.condition?.cart.items.categories.some((category: number) =>
+                  categoryIds.includes(category),
+                ))) &&
+            (!rule.condition?.cart.items.products ||
               (rule.condition?.cart.items.products &&
-              rule.condition?.cart.items.products.includes(productId)))
-          )
-        )
+                rule.condition?.cart.items.products.includes(productId))))),
     );
     if (!hasConditions) return false;
 
@@ -198,13 +214,16 @@ function findApplicablePromotion(promotions: any[], productId: number, brandId: 
         rule.condition?.cart &&
         rule.condition?.cart.items &&
         rule.condition?.cart.items.and &&
-        rule.condition?.cart.items.and.some((andRule: any) => andRule.not && 
-          (
-            (andRule.not.brands && andRule.not.brands.includes(brandId)) || 
-            (andRule.not.categories && andRule.not.categories.some((category: number) => categoryIds.includes(category))) || 
-            (andRule.not.products && andRule.not.products.includes(productId))
-          )
-        )
+        rule.condition?.cart.items.and.some(
+          (andRule: any) =>
+            andRule.not &&
+            ((andRule.not.brands && andRule.not.brands.includes(brandId)) ||
+              (andRule.not.categories &&
+                andRule.not.categories.some((category: number) =>
+                  categoryIds.includes(category),
+                )) ||
+              (andRule.not.products && andRule.not.products.includes(productId))),
+        ),
     );
     if (hasAndNotConditions) return false;
 
@@ -213,77 +232,110 @@ function findApplicablePromotion(promotions: any[], productId: number, brandId: 
         rule.condition?.cart &&
         rule.condition?.cart.items &&
         (!rule.condition?.cart.items.and ||
-        (rule.condition?.cart.items.and &&
-        rule.condition?.cart.items.and.some((andRule: any) => 
-          (!andRule.brands || 
-            (andRule.brands &&
-            andRule.brands.includes(brandId))) && 
-          (!andRule.categories || 
-            (andRule.categories &&
-            andRule.categories.some((category: number) => categoryIds.includes(category)))) &&
-          (!andRule.products || 
-            (andRule.products &&
-            andRule.products.includes(productId)))
-        )
-        )
-        )
+          (rule.condition?.cart.items.and &&
+            rule.condition?.cart.items.and.some(
+              (andRule: any) =>
+                (!andRule.brands || (andRule.brands && andRule.brands.includes(brandId))) &&
+                (!andRule.categories ||
+                  (andRule.categories &&
+                    andRule.categories.some((category: number) =>
+                      categoryIds.includes(category),
+                    ))) &&
+                (!andRule.products || (andRule.products && andRule.products.includes(productId))),
+            ))),
     );
     if (!hasAndConditions) return false;
 
     return true;
   });
 
-  return applicablePromotions && applicablePromotions.length > 0 ? sortPromotions(applicablePromotions)[0] : null;
+  return applicablePromotions && applicablePromotions.length > 0
+    ? sortPromotions(applicablePromotions)[0]
+    : null;
 }
 
-function getPromotionDecoration(promotion: Promotion, free_shipping: boolean = false): string | null {
+function getPromotionDecoration(
+  promotion: Promotion,
+  free_shipping: boolean = false,
+): string | null {
   let decoration: string | null = null;
 
-  if (free_shipping)
-    decoration = 'Free Shipping';
+  if (free_shipping) decoration = 'Free Shipping';
 
-  const rule = promotion.rules.some((rule: any) => rule.action.cart_items && rule.action.cart_items.discount)
+  const rule = promotion.rules.some(
+    (rule: any) => rule.action.cart_items && rule.action.cart_items.discount,
+  )
     ? promotion.rules.find((rule: any) => rule.action.cart_items && rule.action.cart_items.discount)
-    : promotion.rules.find((rule: any) => rule.action.cart_value && rule.action.cart_value.discount);
+    : promotion.rules.find(
+        (rule: any) => rule.action.cart_value && rule.action.cart_value.discount,
+      );
 
   if (rule) {
     if (rule.action.cart_items && rule.action.cart_items.discount) {
       if (promotion.redemption_type === 'AUTOMATIC') {
-        decoration = rule.action.cart_items.discount.percentage_amount && Number(rule.action.cart_items.discount.percentage_amount) > 0
-          ? `${Number(rule.action.cart_items.discount.percentage_amount)}% Off`
-          : `$${Number(rule.action.cart_items.discount.percentage_amount)} Off`
+        decoration =
+          rule.action.cart_items.discount.percentage_amount &&
+          Number(rule.action.cart_items.discount.percentage_amount) > 0
+            ? `${Number(rule.action.cart_items.discount.percentage_amount)}% Off`
+            : `$${Number(rule.action.cart_items.discount.percentage_amount)} Off`;
       } else if (promotion.redemption_type === 'COUPON') {
-        decoration = rule.action.cart_items.discount.percentage_amount && Number(rule.action.cart_items.discount.percentage_amount) > 0
-          ? `${Number(rule.action.cart_items.discount.percentage_amount)}% Off with Code${ promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : '' }`
-          : `$${Number(rule.action.cart_items.discount.percentage_amount)} Off with Code${ promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : '' }`
+        decoration =
+          rule.action.cart_items.discount.percentage_amount &&
+          Number(rule.action.cart_items.discount.percentage_amount) > 0
+            ? `${Number(rule.action.cart_items.discount.percentage_amount)}% Off with Code${promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : ''}`
+            : `$${Number(rule.action.cart_items.discount.percentage_amount)} Off with Code${promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : ''}`;
       }
     } else if (rule.action.cart_value && rule.action.cart_value.discount) {
       if (promotion.redemption_type === 'AUTOMATIC') {
-        decoration = rule.action.cart_value.discount.percentage_amount && Number(rule.action.cart_value.discount.percentage_amount) > 0
-          ? `${Number(rule.action.cart_value.discount.percentage_amount)}% Off in the Cart`
-          : `$${Number(rule.action.cart_value.discount.percentage_amount)} Off in the Cart`
+        decoration =
+          rule.action.cart_value.discount.percentage_amount &&
+          Number(rule.action.cart_value.discount.percentage_amount) > 0
+            ? `${Number(rule.action.cart_value.discount.percentage_amount)}% Off in the Cart`
+            : `$${Number(rule.action.cart_value.discount.percentage_amount)} Off in the Cart`;
       } else if (promotion.redemption_type === 'COUPON') {
-        decoration = rule.action.cart_value.discount.percentage_amount && Number(rule.action.cart_value.discount.percentage_amount) > 0
-          ? `${Number(rule.action.cart_value.discount.percentage_amount)}% Off in the Cart with Code${ promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : '' }`
-          : `$${Number(rule.action.cart_value.discount.percentage_amount)} Off in the Cart with Code${ promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : '' }`
+        decoration =
+          rule.action.cart_value.discount.percentage_amount &&
+          Number(rule.action.cart_value.discount.percentage_amount) > 0
+            ? `${Number(rule.action.cart_value.discount.percentage_amount)}% Off in the Cart with Code${promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : ''}`
+            : `$${Number(rule.action.cart_value.discount.percentage_amount)} Off in the Cart with Code${promotion.coupons && promotion.coupons[0]?.code ? ': ' + promotion.coupons[0]?.code : ''}`;
       }
     }
   }
 
-  if (['no tax', 'zero tax', 'notax'].some((keyword: string) => promotion.name.toLowerCase().includes(keyword))) {
+  if (
+    ['no tax', 'zero tax', 'notax'].some((keyword: string) =>
+      promotion.name.toLowerCase().includes(keyword),
+    )
+  ) {
     decoration = 'We Pay the Tax';
   }
 
   return decoration;
 }
 
-function Promotion({ promotions, product_id, brand_id, category_ids, free_shipping }: { promotions: any[] | null, product_id: number, brand_id: number, category_ids: number[], free_shipping: boolean }) {
+function Promotion({
+  promotions,
+  product_id,
+  brand_id,
+  category_ids,
+  free_shipping,
+}: {
+  promotions: any[] | null;
+  product_id: number;
+  brand_id: number;
+  category_ids: number[];
+  free_shipping: boolean;
+}) {
   //const promotion = findPromotionWithBrand(promotions, brand_id);
   const promotion = findApplicablePromotion(promotions || [], product_id, brand_id, category_ids);
 
   return (
     <>
-      {promotion ? <div className="mt-4 bg-gray-100 p-2 text-center">{getPromotionDecoration(promotion, free_shipping)}</div> : null}
+      {promotion ? (
+        <div className="mt-4 bg-gray-100 p-2 text-center">
+          {getPromotionDecoration(promotion, free_shipping)}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -397,6 +449,8 @@ export function Hit({
   isLoaded = false,
   view = 'grid',
 }: HitProps) {
+  const { wishlists } = useWishlists();
+
   const format = useFormatter();
   const currency = 'USD';
 
@@ -469,24 +523,46 @@ export function Hit({
               )}
             </Link>
           </figure>
-          <button
-            type="button"
-            title="Add to Favorites"
-            className="absolute bottom-2 right-2 rounded-full bg-gray-100"
-          >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M16.1 23.55L16 23.65L15.89 23.55C11.14 19.24 8 16.39 8 13.5C8 11.5 9.5 10 11.5 10C13.04 10 14.54 11 15.07 12.36H16.93C17.46 11 18.96 10 20.5 10C22.5 10 24 11.5 24 13.5C24 16.39 20.86 19.24 16.1 23.55ZM20.5 8C18.76 8 17.09 8.81 16 10.08C14.91 8.81 13.24 8 11.5 8C8.42 8 6 10.41 6 13.5C6 17.27 9.4 20.36 14.55 25.03L16 26.35L17.45 25.03C22.6 20.36 26 17.27 26 13.5C26 10.41 23.58 8 20.5 8Z"
-                fill="#b4b4b5"
-              />
-            </svg>
-          </button>
+
+          <WishlistAddToList
+            wishlists={wishlists}
+            hasPreviousPage={false}
+            product={{
+              entityId: parseInt(hit.objectID.toString()),
+              name: hit.name,
+              path: hit.url,
+              sku: hit.variants?.[0]?.sku || hit.sku || '',
+              brand: {
+                name: hit.brand_name,
+                path: ''
+              },
+              images: [],
+              mpn: '',
+              variants: [
+                {
+                  id: hit.variants?.[0]?.id,
+                  sku: hit.variants?.[0]?.sku || hit.sku || '',
+                  price: {
+                    value: hit.variants?.[0]?.price || hit.prices?.USD,
+                    currencyCode: 'USD',
+                  },
+                  basePrice: {
+                    value: hit.prices?.USD,
+                    currencyCode: 'USD',
+                  },
+                  salePrice: hit.sales_prices?.USD
+                    ? {
+                        value: hit.sales_prices.USD,
+                        currencyCode: 'USD',
+                      }
+                    : null,
+                },
+              ],
+            }}
+            onGuestClick={() => {
+              window.location.href = '/login';
+            }}
+          />
         </div>
       </div>
 
@@ -496,11 +572,39 @@ export function Hit({
           {(hit.brand_name || hit.brand) && (
             <div className="mt-2">{hit.brand_name ?? hit.brand}</div>
           )}
-          <h2 className="mt-2 text-base md:text-lg font-medium">
+          <h2 className="mt-2 text-base font-medium md:text-lg">
             <Link href={hit.url}>
               <Highlight hit={hit} attribute="name" />
             </Link>
           </h2>
+
+          <div className="mx-auto mt-2 flex flex-wrap items-center justify-center space-x-2">
+            {!!hit.on_clearance &&
+              <span className="mt-2 inline-block bg-gray-400 px-1 py-0.5 text-xs uppercase tracking-wider text-white">
+                Clearance
+              </span>
+            }
+            <ProductPrice 
+              defaultPrice={hit?.prices?.USD || 0} 
+              defaultSalePrice={hit?.sales_prices?.USD || null} 
+              price={price}
+              salePrice={salePrice}
+              currency={currency}
+              format={format}
+              options={{
+                useAsyncMode: useAsyncMode,
+                useDefaultPrices: useDefaultPrices,
+                isLoading: isLoading,
+                isLoaded: isLoaded
+              }}
+              classNames={{
+                root: 'mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start',
+                discount: 'whitespace-nowrap font-bold text-brand-400',
+              }}
+            />
+          </div>
+
+          {/*
           {useAsyncMode && !useDefaultPrices ? (
             <div className="mx-auto mt-2 flex flex-wrap items-center justify-center space-x-2">
               {hit.on_clearance && (
@@ -510,16 +614,18 @@ export function Hit({
               )}
 
               {!isLoading && (price || salePrice) ? (
-                <div className="mt-2 flex flex-wrap justify-center md:justify-start items-center space-x-2">
+                <div className="mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start">
                   {salePrice && salePrice > 0 ? (
-                    <s className="order-1">{format.number(price || 0, { style: 'currency', currency: currency })}</s>
+                    <s className="order-1">
+                      {format.number(price || 0, { style: 'currency', currency: currency })}
+                    </s>
                   ) : (
                     <span className="order-1">
                       {format.number(price || 0, { style: 'currency', currency: currency })}
                     </span>
                   )}
                   {price && salePrice && salePrice > 0 ? (
-                    <strong className="order-3 md:order-2 whitespace-nowrap font-bold text-brand-400">
+                    <strong className="order-3 whitespace-nowrap font-bold text-brand-400 md:order-2">
                       Save {getDiscount(price, salePrice)}%
                     </strong>
                   ) : null}
@@ -531,7 +637,7 @@ export function Hit({
                 </div>
               ) : !isLoading && isLoaded ? (
                 hit.prices ? (
-                  <div className="mt-2 flex flex-wrap justify-center md:justify-start items-center space-x-2">
+                  <div className="mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start">
                     {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                     hit.on_sale ? (
                       <s className="order-1">
@@ -550,7 +656,7 @@ export function Hit({
                     )}
                     {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                     hit.on_sale ? (
-                      <strong className="order-3 md:order-2 whitespace-nowrap font-bold text-brand-400">
+                      <strong className="order-3 whitespace-nowrap font-bold text-brand-400 md:order-2">
                         Save{' '}
                         {getDiscount(
                           hit.prices.USD ?? hit.price,
@@ -581,7 +687,7 @@ export function Hit({
                   Clearance
                 </span>
               )}
-              <div className="mt-2 flex flex-wrap justify-center md:justify-start items-center space-x-2">
+              <div className="mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start">
                 {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                 hit.on_sale ? (
                   <s className="order-1">
@@ -594,7 +700,7 @@ export function Hit({
                 )}
                 {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                 hit.on_sale ? (
-                  <strong className="order-3 md:order-2 whitespace-nowrap font-bold text-brand-400">
+                  <strong className="order-3 whitespace-nowrap font-bold text-brand-400 md:order-2">
                     Save{' '}
                     {getDiscount(hit.prices.USD ?? hit.price, hit.sales_prices.USD ?? hit.newPrice)}
                     %
@@ -612,6 +718,7 @@ export function Hit({
               </div>
             </div>
           ) : null}
+          */}
           {hit.reviews_count > 0 && (
             <ReviewSummary
               numberOfReviews={hit.reviews_count}
@@ -622,12 +729,12 @@ export function Hit({
         </div>
         <Promotion
           promotions={promotions}
-          product_id={hit.objectID}
+          product_id={Number(hit.objectID)}
           brand_id={hit.brand_id}
           category_ids={hit.category_ids}
           free_shipping={hit.free_shipping}
         />
-        <div className="compare-product p-4 pt-2 flex md:hidden items-center justify-center">
+        <div className="compare-product flex items-center justify-center p-4 pt-2 md:hidden">
           <Compare
             id={hit.objectID}
             image={hit.image_url ? { src: hit.image_url, altText: hit.name } : noImage}
@@ -663,8 +770,8 @@ export function Hit({
             )}
             {hit.metafields &&
               hit.metafields.Details &&
-              hit.metafields.Details.ratings_certifications && (
-                <RatingCertifications data={hit.metafields.Details.ratings_certifications} />
+              hit.metafields.Details['Ratings and Certifications'] && (
+                <RatingCertifications data={hit.metafields.Details['Ratings and Certifications']} />
               )}
           </div>
 
@@ -690,24 +797,6 @@ export function Hit({
                   )}
                 </Link>
               </figure>
-              <button
-                type="button"
-                title="Add to Favorites"
-                className="absolute bottom-2 right-2 rounded-full bg-gray-100"
-              >
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 32 32"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M16.1 23.55L16 23.65L15.89 23.55C11.14 19.24 8 16.39 8 13.5C8 11.5 9.5 10 11.5 10C13.04 10 14.54 11 15.07 12.36H16.93C17.46 11 18.96 10 20.5 10C22.5 10 24 11.5 24 13.5C24 16.39 20.86 19.24 16.1 23.55ZM20.5 8C18.76 8 17.09 8.81 16 10.08C14.91 8.81 13.24 8 11.5 8C8.42 8 6 10.41 6 13.5C6 17.27 9.4 20.36 14.55 25.03L16 26.35L17.45 25.03C22.6 20.36 26 17.27 26 13.5C26 10.41 23.58 8 20.5 8Z"
-                    fill="#B4B4B5"
-                  />
-                </svg>
-              </button>
             </div>
           </div>
           <ColorSwatches variants={hit.variants} onImageClick={setImageUrl} />
@@ -716,11 +805,39 @@ export function Hit({
           {(hit.brand_name || hit.brand) && (
             <div className="mt-2">{hit.brand_name ?? hit.brand}</div>
           )}
-          <h2 className="mt-2 text-base md:text-lg font-medium">
+          <h2 className="mt-2 text-base font-medium md:text-lg">
             <Link href={hit.url}>
               <Highlight hit={hit} attribute="name" />
             </Link>
           </h2>
+
+          <div className="mx-auto mt-2 flex flex-wrap items-center space-x-2">
+            {!!hit.on_clearance &&
+              <span className="mt-2 inline-block bg-gray-400 px-1 py-0.5 text-xs uppercase tracking-wider text-white">
+                Clearance
+              </span>
+            }
+            <ProductPrice 
+              defaultPrice={hit?.prices?.USD || 0} 
+              defaultSalePrice={hit?.sales_prices?.USD || null} 
+              price={price}
+              salePrice={salePrice}
+              currency={currency}
+              format={format}
+              options={{
+                useAsyncMode: useAsyncMode,
+                useDefaultPrices: useDefaultPrices,
+                isLoading: isLoading,
+                isLoaded: isLoaded
+              }}
+              classNames={{
+                root: 'mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start',
+                discount: 'whitespace-nowrap font-bold text-brand-400',
+              }}
+            />
+          </div>
+
+          {/*
           {useAsyncMode && !useDefaultPrices ? (
             <div className="mx-auto mt-2 flex flex-wrap items-center space-x-2">
               {hit.on_clearance && (
@@ -729,16 +846,18 @@ export function Hit({
                 </span>
               )}
               {!isLoading && (price || salePrice) ? (
-                <div className="mt-2 flex flex-wrap justify-center md:justify-start items-center space-x-2">
+                <div className="mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start">
                   {salePrice && salePrice > 0 ? (
-                    <s className="order-1">{format.number(price || 0, { style: 'currency', currency: currency })}</s>
+                    <s className="order-1">
+                      {format.number(price || 0, { style: 'currency', currency: currency })}
+                    </s>
                   ) : (
                     <span className="order-1">
                       {format.number(price || 0, { style: 'currency', currency: currency })}
                     </span>
                   )}
                   {price && salePrice && salePrice > 0 ? (
-                    <strong className="order-3 md:order-2 whitespace-nowrap font-bold text-brand-400">
+                    <strong className="order-3 whitespace-nowrap font-bold text-brand-400 md:order-2">
                       Save {getDiscount(price, salePrice)}%
                     </strong>
                   ) : null}
@@ -750,7 +869,7 @@ export function Hit({
                 </div>
               ) : !isLoading && isLoaded ? (
                 hit.prices ? (
-                  <div className="mt-2 flex flex-wrap justify-center md:justify-start items-center space-x-2">
+                  <div className="mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start">
                     {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                     hit.on_sale ? (
                       <s className="order-1">
@@ -769,7 +888,7 @@ export function Hit({
                     )}
                     {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                     hit.on_sale ? (
-                      <strong className="order-3 md:order-2 whitespace-nowrap font-bold text-brand-400">
+                      <strong className="order-3 whitespace-nowrap font-bold text-brand-400 md:order-2">
                         Save{' '}
                         {getDiscount(
                           hit.prices.USD ?? hit.price,
@@ -800,7 +919,7 @@ export function Hit({
                   Clearance
                 </span>
               )}
-              <div className="mt-2 flex flex-wrap justify-center md:justify-start items-center space-x-2">
+              <div className="mt-2 flex flex-wrap items-center justify-center space-x-2 md:justify-start">
                 {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                 hit.on_sale ? (
                   <s className="order-1">
@@ -813,7 +932,7 @@ export function Hit({
                 )}
                 {(hit.sales_prices && hit.sales_prices.USD && hit.sales_prices.USD > 0) ||
                 hit.on_sale ? (
-                  <strong className="order-3 md:order-2 whitespace-nowrap font-bold text-brand-400">
+                  <strong className="order-3 whitespace-nowrap font-bold text-brand-400 md:order-2">
                     Save{' '}
                     {getDiscount(hit.prices.USD ?? hit.price, hit.sales_prices.USD ?? hit.newPrice)}
                     %
@@ -831,6 +950,7 @@ export function Hit({
               </div>
             </div>
           ) : null}
+          */}
           {hit.reviews_count > 0 && (
             <ReviewSummary
               numberOfReviews={hit.reviews_count}
@@ -840,7 +960,7 @@ export function Hit({
           )}
           <Promotion
             promotions={promotions}
-            product_id={hit.objectID}
+            product_id={Number(hit.objectID)}
             brand_id={hit.brand_id}
             category_ids={hit.category_ids}
             free_shipping={hit.free_shipping}
@@ -923,7 +1043,8 @@ export function Hit({
             )
           )}
           <div className="mt-4 md:flex md:space-x-2">
-            <Link href={hit.url}
+            <Link
+              href={hit.url}
               className="flex h-10 w-full cursor-pointer items-center justify-center rounded border border-brand-600 bg-brand-600 px-4 text-center uppercase text-white hover:border-brand-400 hover:bg-brand-400 md:w-auto md:flex-1"
             >
               View Details

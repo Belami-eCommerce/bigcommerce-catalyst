@@ -6,6 +6,11 @@ export const getSessionIdCookie = async () => {
 
   return cookieStore.get('sessionId');
 };
+export const getCartIdCookie = async () => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get('cartId');
+};
 
 export const RemoveSessionIdCookie = async () => {
   const cookieStore = await cookies();
@@ -75,3 +80,4 @@ export const createSessionIdCookie = async (localMachineInformation: any) => {
   }
 
 };
+

@@ -4,24 +4,27 @@ import { useTranslations } from 'next-intl';
 import { BcImage } from '~/components/bc-image';
 import { imageManagerImageUrl } from '~/lib/store-assets';
 import Link from 'next/link';
+import { Flyout } from '~/components/common-flyout';
 
-interface requestQuote {
-  requestQuote: string;
+interface props {
+ 
+  children: React.ReactNode;
 }
 
-export const RequestQuote = ({ requestQuote }: requestQuote) => {
+export const RequestQuote = ({ children}:props) => {
   const t = useTranslations('requestQuote');
 
   return (
-    <div className="mt-6 flex items-center justify-between bg-[#E7F5F8] p-4 xl:mt-[2em]">
+    <div className="mt-3 flex items-center justify-between bg-[#E7F5F8] p-4 xl:mt-[1.5em]">
       <div className="flex flex-1 justify-center">
         <p className="text-center text-[0.75rem] font-normal leading-[1.125rem] tracking-[0.025rem] text-[#000000]">
           <span className="block xl:contents">{t('heading')}</span>
-          <span className="border-b border-[#008BB7] text-[#008BB7]">
-            <Link href="#">{t('requestQuoteLink')}</Link>
+          <span className="border-b border-[#006380] text-[#006380]">
+            {/* <Link href="#">{t('requestQuoteLink')}</Link> */}
+             <Flyout triggerLabel={t('requestQuoteLink')}>{children}</Flyout>
           </span>
           <span className="mx-1">{t('or')}</span>
-          <span className="border-b border-[#008BB7] text-[#008BB7]">
+          <span className="border-b border-[#006380] text-[#006380]">
             <Link href="/trade-account/trade-step1">{t('createTradeAccountLink')}</Link>
           </span>
         </p>

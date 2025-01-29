@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
-import { getSessionCustomerAccessToken } from '~/auth';
+import { getSessionCustomerAccessToken, getSessionUserDetails } from '~/auth';
 import Link from 'next/link';
 import { Breadcrumbs } from '~/components/breadcrumbs';
 import Promotion from '../../../../../components/ui/pdp/belami-promotion-banner-pdp';
@@ -21,9 +21,11 @@ import { CollectionProducts } from '~/belami/components/product';
 import { SiteVibesReviews } from '~/belami/components/sitevibes';
 import { getRelatedProducts, getCollectionProducts } from '~/belami/lib/fetch-algolia-products';
 import { getWishlists } from '../../account/(tabs)/wishlists/page-data';
-import { ChangePriceBasedOnActivationCodeAndShow, ChangePriceBasedOnActivationCodeAndShowPDP, CommonSettingPriceMaxLogic, commonSettinngs } from '~/components/common-functions';
+import { ChangePriceBasedOnActivationCodeAndShow, ChangePriceBasedOnActivationCodeAndShowPDP, calculateProductPrice, CommonSettingPriceMaxLogic, commonSettinngs } from '~/components/common-functions';
 import { cookies } from 'next/headers';
-
+import { Page as MakeswiftPage } from '~/lib/makeswift';
+import StickyScroll, { DetailsWrapper } from './_components/sticky';
+import { calculateProductPrice } from '~/components/common-functions';
 interface Props {
   params: Promise<{ slug: string; locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -72,6 +74,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
   const productId = Number(params.slug);
   const optionValueIds = getOptionValueIds({ searchParams });
+
   const product = await getProduct({
     entityId: productId,
     optionValueIds,
@@ -103,13 +106,19 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 }
 export default async function ProductPage(props: Props) {
   try {
+    const customerAccessToken = await getSessionCustomerAccessToken();
+
     const searchParams = await props.searchParams;
     const params = await props.params;
-    const customerAccessToken = await getSessionCustomerAccessToken();
 
     if (!params || !searchParams) {
       console.error('Missing required params:', { params, searchParams });
       return null;
+    }
+
+    const priceMaxTriggers = {
+      d: searchParams['d'],
+      source: searchParams['source']
     }
 
     const useDefaultPrices = !customerAccessToken;
@@ -126,25 +135,18 @@ export default async function ProductPage(props: Props) {
       optionValueIds,
       useDefaultOptionSelections: optionValueIds.length === 0 ? true : undefined,
     });
-
+    
+    const [updatedProduct] = await calculateProductPrice(product);
+  
     if (!product) {
       return notFound();
     }
-
-    // Add this after the wishlist fetch
-    const wishlistData = await getWishlists({
-      cursor: null,
-      limit: 50,
-    }).catch((error) => {
-      console.error('Error fetching wishlists:', error);
-      return { wishlists: [] };
-    });
-
+    
     // Asset URLs
     const assets = {
       bannerIcon: imageManagerImageUrl('example-1.png', '50w'),
-      galleryExpandIcon: imageManagerImageUrl('vector.jpg', '20w'),
-      dropdownSheetIcon: imageManagerImageUrl('icons8-download-symbol-16.png', '20w'),
+      galleryExpandIcon: imageManagerImageUrl('pan-zoom.png', '20w'),
+      dropdownSheetIcon: imageManagerImageUrl('icons8-download-symbol-16.png', '15w'),
       cartHeader: imageManagerImageUrl('cartheader.png', '20w'),
       couponIcon: imageManagerImageUrl('vector-2-.png', '20w'),
       paywithGoogle: imageManagerImageUrl('apple-xxl.png', '20w'),
@@ -250,49 +252,55 @@ export default async function ProductPage(props: Props) {
             )}
           </div>
 
-          <div className="mb-4 mt-4 lg:grid lg:grid-cols-2 lg:gap-8 xl:mb-12">
-            <Suspense fallback={<div>Loading gallery...</div>}>
-              <Gallery
-                product={product}
-                bannerIcon={assets.bannerIcon}
-                galleryExpandIcon={assets.galleryExpandIcon}
-                productMpn={product.mpn}
-                wishlistData={{
-                  wishlists: customerAccessToken ? wishlistData?.wishlists || [] : [],
-                  isAuthenticated: !!customerAccessToken,
-                  product: {
-                    entityId: product.entityId,
-                    variantEntityId: product.variants.edges?.[0]?.node.entityId,
-                    name: product.name,
-                    path: product.path,
-                    images: productImages,
-                    brand: product.brand,
-                    prices: product.prices,
-                    rating: product.reviewSummary?.averageRating,
-                    reviewCount: product.reviewSummary?.numberOfReviews,
-                  },
-                }}
-              />
-            </Suspense>
+          <div className="mb-4 mt-4 xl:mb-12 xl:grid xl:grid-cols-2 xl:gap-8">
+            <div className="x2:w-[50em] x3:w-[52em] x4:!w-[60em] xl:w-[48em] 2xl:!w-[54em]">
+              <Suspense fallback={<div>Loading gallery...</div>}>
+                <Gallery
+                  product={product}
+                  bannerIcon={assets.bannerIcon}
+                  galleryExpandIcon={assets.galleryExpandIcon}
+                  productMpn={product.mpn}
+                />
+              </Suspense>
+            </div>
 
-            <Details
-              product={product}
-              collectionValue={collectionValue}
-              dropdownSheetIcon={assets.dropdownSheetIcon}
-              cartHeader={assets.cartHeader}
-              couponIcon={assets.couponIcon}
-              paywithGoogle={assets.paywithGoogle}
-              payPal={assets.payPal}
-              requestQuote={assets.requestQuote}
-              closeIcon={assets.closeIcon}
-              blankAddImg={assets.blankAddImg}
-              getAllCommonSettinngsValues={CommonSettinngsValues}
-              productImages={productImages}
-            />
+            <div className="x2:w-[40em] x3:w-[42em] x4:!pl-[15em] x4:!w-[46em] xl:w-[35em] xl:pl-[12em] 2xl:w-[43em] 2xl:!pl-[11em]">
+              <DetailsWrapper>
+                <Details
+                  product={updatedProduct}
+                  collectionValue={collectionValue}
+                  dropdownSheetIcon={assets.dropdownSheetIcon}
+                  cartHeader={assets.cartHeader}
+                  couponIcon={assets.couponIcon}
+                  paywithGoogle={assets.paywithGoogle}
+                  payPal={assets.payPal}
+                  requestQuote={assets.requestQuote}
+                  closeIcon={assets.closeIcon}
+                  blankAddImg={assets.blankAddImg}
+                  getAllCommonSettinngsValues={CommonSettinngsValues}
+                  productImages={productImages}
+                  triggerLabel1={
+                    <p className="pt-2 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#008BB7] underline underline-offset-4">
+                      Shipping Policy
+                    </p>
+                  }
+                  triggerLabel2={
+                    <p className="pt-2 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#008BB7] underline underline-offset-4">
+                      Return Policy
+                    </p>
+                  }
+                  children1={<MakeswiftPage locale={locale} path="/content/shipping-flyout" />}
+                  children2={<MakeswiftPage locale={locale} path="/content/returns-flyout" />}
+                  children3={<MakeswiftPage locale={locale} path="/content/request-a-quote-flyout" />}
+                />
+              </DetailsWrapper>
+            </div>
+
             <div className="lg:col-span-2">
-            <hr className="border border-gray-200 mb-4"/>
+              <hr className="mb-4 border border-gray-200" />
               <Description product={product} />
-              <hr className="border border-gray-200 my-4"/>
+              <hr className="mb-[55px] mt-[20px] border border-gray-200" />
+              {/*
               <CollectionProducts
                 collection={collectionValue}
                 products={collectionProducts.hits}
@@ -304,16 +312,25 @@ export default async function ProductPage(props: Props) {
                 moreLink={`/search?brand_name[0]=${product.brand?.name ?? ''}&collection[0]=${collectionValue}`}
                 useDefaultPrices={useDefaultPrices}
               />
+              */}
+              <CollectionProducts
+                collection={collectionValue}
+                products={collectionProducts.hits}
+                useDefaultPrices={useDefaultPrices}
+                priceMaxTriggers={priceMaxTriggers}
+              />
               <Promotion />
               <RelatedProducts
                 productId={product.entityId}
                 products={relatedProducts}
                 useDefaultPrices={useDefaultPrices}
+                priceMaxTriggers={priceMaxTriggers}
               />
               <Warranty product={product} />
               <SiteVibesReviews product={product} category={categoryWithBreadcrumbs} />
             </div>
           </div>
+
           <ProductViewed product={product} />
         </ProductProvider>
       </div>

@@ -29,6 +29,17 @@ import { ProductFormData, useProductForm } from './use-product-form';
 import { ProductFlyout } from '~/components/product-card/product-flyout';
 import { useCommonContext } from '~/components/common-context/common-provider';
 
+import aa from 'search-insights';
+import { useCompareDrawerContext } from '~/components/ui/compare-drawer';
+import { getCartIdCookie } from '~/app/[locale]/(default)/sales-buddy/_actions/cart';
+
+aa('init', {
+  appId: process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '',
+  apiKey: process.env.NEXT_PUBLIC_ALGOLIA_API_KEY || '',
+});
+
+const indexName: string = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || '';
+
 interface Props {
   data: FragmentOf<typeof ProductItemFragment>;
   multipleOptionIcon: string;
@@ -90,6 +101,7 @@ export const ProductForm = ({
   const cart = useCart();
   const productFlyout: any = useCommonContext();
   const productOptions = removeEdgesAndNodes(product.productOptions);
+  const { cartIdForCheck, setCartIdForCheck } = useCompareDrawerContext();
 
   if (productOptions?.length > 0) {
     const router = useRouter();
@@ -128,9 +140,13 @@ export const ProductForm = ({
   const productFormSubmit = async (data: ProductFormData) => {
     const quantity = Number(data.quantity);
     // Optimistic update
+    
     cart.increment(quantity);
     const result = await handleAddToCart(data, product);
-
+    const cartId = await getCartIdCookie()
+    if (cartId?.value == undefined) {
+      setCartIdForCheck(result?.data?.entityId)
+    }
     if (result.error) {
       toast.error(t('error'), {
         icon: <AlertCircle className="text-error-secondary" />,
@@ -188,6 +204,21 @@ export const ProductForm = ({
 
     const transformedProduct = productItemTransform(product);
 
+    if (product && product.prices) {
+      aa('addedToCartObjectIDs', {
+        eventName: 'Product Added To Cart',
+        index: indexName,
+        objectIDs: [String(transformedProduct.product_id)],
+        objectData: [
+          {
+            price: transformedProduct.purchase_price,
+            quantity: quantity,
+          },
+        ],
+        currency: transformedProduct.currency,
+      });
+    }
+
     bodl.cart.productAdded({
       product_value: transformedProduct.purchase_price * quantity,
       currency: transformedProduct.currency,
@@ -239,7 +270,7 @@ export const ProductForm = ({
       />
       <FormProvider handleSubmit={handleSubmit} register={register} {...methods}>
         <form
-          className="product-variants flex flex-col gap-6"
+          className="product-variants flex flex-col gap-[20px] mt-[15px]"
           onSubmit={handleSubmit(productFormSubmit)}
         >
           <input type="hidden" value={product.entityId} {...register('product_id')} />
@@ -281,7 +312,7 @@ export const ProductForm = ({
 
           <QuantityField />
 
-          <div className="mt-0 flex flex-col gap-4 @md:flex-row xl:mt-4">
+          <div className="mt-0 flex flex-col gap-4 @md:flex-row">
             <Submit data={product} />
             <div className="hidden w-full">
               <Button disabled type="submit" variant="secondary">

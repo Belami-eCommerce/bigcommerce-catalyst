@@ -27,10 +27,13 @@ import Link from 'next/link';
 import { store_pdp_product_in_localstorage } from '../../../sales-buddy/common-components/common-functions';
 import addToCart from '~/public/add-to-cart/addToCart.svg';
 import Image from 'next/image';
+import WishlistAddToList from '../../../account/(tabs)/wishlists/wishlist-add-to-list/wishlist-add-to-list';
+import { useWishlists } from '../../../account/(tabs)/wishlists/wishlist-add-to-list/hooks';
 import { NoShipCanada } from './belami-product-no-shipping-canada';
 import { CommonSettingPriceMaxLogic, commonSettinngs } from '~/components/common-functions';
+import ScrollContainer from './sticky';
+import { Flyout } from '~/components/common-flyout';
 import { useRouter } from 'next/navigation';
-import { CommonSettingPriceMaxLogicApi } from '~/components/management-apis';
 interface ProductOptionValue {
   entityId: number;
   label: string;
@@ -52,6 +55,27 @@ interface ProductImage {
   url: string;
   altText: string;
   isDefault: boolean;
+}
+
+interface Props {
+  product: FragmentOf<typeof DetailsFragment>;
+  collectionValue?: string;
+  dropdownSheetIcon?: string;
+  cartHeader?: string;
+  couponIcon?: string;
+  paywithGoogle?: string;
+  payPal?: string;
+  requestQuote?: string;
+  closeIcon?: string;
+  blankAddImg?: string;
+  productImages?: string;
+  triggerLabel1: React.ReactNode;
+  children1: React.ReactNode;
+  triggerLabel2: React.ReactNode;
+  children2: React.ReactNode;
+  triggerLabel3: React.ReactNode;
+  children3: React.ReactNode;
+  getAllCommonSettinngsValues:any;
 }
 
 export const DetailsFragment = graphql(
@@ -111,6 +135,7 @@ export const DetailsFragment = graphql(
       }
       brand {
         name
+        path
         entityId
         id
       }
@@ -126,20 +151,6 @@ export const DetailsFragment = graphql(
   ],
 );
 
-interface Props {
-  product: FragmentOf<typeof DetailsFragment>;
-  collectionValue?: string;
-  dropdownSheetIcon?: string;
-  cartHeader?: string;
-  couponIcon?: string;
-  paywithGoogle?: string;
-  payPal?: string;
-  requestQuote?: string;
-  closeIcon?: string;
-  blankAddImg?: string;
-  productImages?: string;
-  getAllCommonSettinngsValues?:any
-}
 export const Details = ({
   product,
   collectionValue,
@@ -152,7 +163,13 @@ export const Details = ({
   closeIcon,
   blankAddImg,
   productImages,
-  getAllCommonSettinngsValues
+  getAllCommonSettinngsValues,
+  triggerLabel1,
+  triggerLabel2,
+  children1,
+  children2,
+  triggerLabel3,
+  children3,
 }: Props) => {
   const t = useTranslations('Product.Details');
   const format = useFormatter();
@@ -161,67 +178,61 @@ export const Details = ({
   const [currentImageUrl, setCurrentImageUrl] = useState(product.defaultImage?.url || '');
   const [isScrollingUp, setIsScrollingUp] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const scrollableRef = useRef(null); // Reference to the scrollable div
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [scrollTop, setScrollTop] = useState(0);
 
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    setStartY(e.clientY);
-    setScrollTop(scrollableRef.current.scrollTop);
-    document.body.style.userSelect = 'none';
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyHeader(window.scrollY > 800);
+    };
 
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
+    const handleCustomScroll = (e: CustomEvent) => {
+      setShowStickyHeader(e.detail.scrollY > 800);
+    };
 
-    const distance = e.clientY - startY;
-    scrollableRef.current.scrollTop = scrollTop - distance; // Update the scroll position
-  };
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('customScroll', handleCustomScroll as EventListener);
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    document.body.style.userSelect = 'auto';
-  };
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('customScroll', handleCustomScroll as EventListener);
+    };
+  }, []);
+
   const searchParams = useSearchParams();
   const { currentMainMedia } = useCommonContext();
   // const [getAllCommonSettinngsValues, setGetAllCommonSettinngsValues] = useState<any>([]);
 
   const customFields = removeEdgesAndNodes(product.customFields);
   const productOptions = removeEdgesAndNodes(product.productOptions);
-  // const productImages = removeEdgesAndNodes(product.images);
   const variants = removeEdgesAndNodes(product.variants);
-
   const fanPopup = imageManagerImageUrl('grey-image.png', '150w');
   const certificationIcon = imageManagerImageUrl('vector-7-.png', '20w');
   const multipleOptionIcon = imageManagerImageUrl('vector-5-.png', '20w');
+  const productSku = product.sku;
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const productMpn = product.mpn;
   const brand = product.brand?.entityId;
 
   const showPriceRange =
     product.prices?.priceRange?.min?.value !== product.prices?.priceRange?.max?.value;
 
+    console.log("prod details from PDP------------",product);
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (!productFormRef.current) return;
+    const matchingVariant = variants.find((variant) => variant.sku === productSku);
+    if (matchingVariant) {
+      setSelectedVariantId(matchingVariant.entityId);
+    } else {
+      setSelectedVariantId(null); // Reset if no matching variant is found
+    }
+  }, [variants, productSku]);
 
-      const formRect = productFormRef.current.getBoundingClientRect();
-      setShowStickyHeader(formRect.bottom < 0);
-
-      if (currentScrollY < lastScrollY) {
-        setIsScrollingUp(true);
-      } else {
-        setIsScrollingUp(false);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  useEffect(() => {
+    const matchingVariant = variants.find((variant) => variant?.sku === productSku);
+    if (matchingVariant) {
+      setSelectedVariantId(matchingVariant.entityId);
+    } else {
+      setSelectedVariantId(null); // Reset if no matching variant is found
+    }
+  }, [variants, productSku]);
 
   useEffect(() => {
     const updateImageFromVariant = () => {
@@ -239,28 +250,26 @@ export const Details = ({
         const selectedVariant = variants.find((variant) =>
           selectedOptionIds.includes(String(variant.entityId)),
         );
-
-        if (selectedVariant?.defaultImage?.url) {
-          setCurrentImageUrl(selectedVariant.defaultImage.url);
-          return;
+        if (selectedVariant) {
+          setSelectedVariantId(selectedVariant.entityId);
+          if (selectedVariant?.defaultImage?.url) {
+            setCurrentImageUrl(selectedVariant.defaultImage.url);
+            return;
+          }
         }
       }
 
       setCurrentImageUrl(product.defaultImage?.url || '');
     };
-    
 
     updateImageFromVariant();
   }, [searchParams, product, variants, productOptions, currentMainMedia]);
 
   useEffect(() => {
-    // store product id in local storage for Salesbuddy
     store_pdp_product_in_localstorage(product);
   }, [product]);
-    
-  useEffect(() => {
-  }, [product]);
-  
+
+  const productAvailability = product.availabilityV2.status;
 
   const getSelectedValue = (option: MultipleChoiceOption): string => {
     const selectedId = searchParams.get(String(option.entityId));
@@ -278,10 +287,9 @@ export const Details = ({
   };
 
   return (
-    <div>
+    <div className="sticky z-50">
       {showStickyHeader && (
         <>
-          {/* Desktop View - Sticky Top */}
           <div className="fixed left-0 right-0 top-0 z-50 hidden border-b border-gray-200 bg-white shadow-2xl xl:block">
             <div className="container mx-auto px-[3rem] pb-[2rem] pt-[1rem]">
               <div className="flex items-center justify-between gap-4">
@@ -295,14 +303,14 @@ export const Details = ({
                       className="h-full w-full object-center"
                     />
                   </div>
-                  <div className="mr-[10em] flex-1">
-                    <h2 className="text-left text-[20px] font-medium leading-8 tracking-wide text-black">
+                  <div className="mr-[1em] flex-1">
+                    <h2 className="text-left text-[20px] font-medium leading-8 tracking-wide text-[#353535]">
                       {product.name}
                     </h2>
 
-                    <div className="mt-3 text-left text-[14px] font-normal leading-[10px] tracking-[0.25px]">
+                    <div className="mt-3 text-left text-[14px] font-normal leading-[10px] tracking-[0.25px] text-[#353535]">
                       by{' '}
-                      <Link href={product.brand?.path ?? ''} className="underline">
+                      <Link href={product.brand?.path ?? ''} className="text-[#353535] underline">
                         {product.brand?.name}
                       </Link>
                     </div>
@@ -346,75 +354,82 @@ export const Details = ({
                     </div>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-4">
-                  {product.prices && (
-                    <div className="sticky-product-price mt-2 block !w-[16em] items-center gap-[0.5em] text-center lg:text-right">
-                    
-                      {product.prices.basePrice?.value !== undefined &&
-                      product.prices.price?.value !== undefined &&
-                      product.prices.basePrice.value > product.prices.price.value ? (
+                  {product?.UpdatePriceForMSRP && (
+                    <div className="sticky-product-price mt-2 !w-[16em] items-center whitespace-nowrap text-center lg:text-right">
+                      {product?.UpdatePriceForMSRP.hasDiscount === true ?(
                         <>
-                          <span className="mr-2 text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
-                            -------------------------------
-                            {format.number(product.prices.price.value, {
+                          <span className="price-1 mr-2 text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
+                            {format.number(product.UpdatePriceForMSRP.updatedPrice, {
                               style: 'currency',
-                              currency: product.prices.price.currencyCode,
+                              currency: product.UpdatePriceForMSRP.currencyCode,
                             })}
                           </span>
                           <span className="mr-2 text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through">
-                            {format.number(product.prices.basePrice.value, {
+                            {format.number(product.UpdatePriceForMSRP.originalPrice, {
                               style: 'currency',
-                              currency: product.prices.price.currencyCode,
+                              currency: product.UpdatePriceForMSRP.currencyCode,
                             })}
                           </span>
+                          <span className="-ml-[0.5em] mb-1 mr-2 text-left text-[12px] text-gray-500">
+                            MSRP
+                          </span>
                           <span className="mr-2 text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
-                            Save{' '}
-                            {Math.round(
-                              ((product.prices.basePrice.value - product.prices.price.value) /
-                                product.prices.basePrice.value) *
-                                100,
-                            )}
+                            Save
+                            {product.UpdatePriceForMSRP.discount}
                             %
                           </span>
                         </>
                       ) : (
-                        <span className="text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
-                         
-                          {format.number(product.prices.price?.value || 0, {
+                        <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
+                          {format.number(product.UpdatePriceForMSRP.originalPrice || 0, {
                             style: 'currency',
-                            currency: product.prices.price?.currencyCode || 'USD',
+                            currency: product.updatePriceForMSRP.currencyCode || 'USD',
                           })}
                         </span>
                       )}
                     </div>
                   )}
-
-                  <button
-                    className="group relative flex h-[3em] w-[14em] items-center justify-center overflow-hidden bg-[#03465C] text-center text-[14px] font-medium uppercase leading-[32px] tracking-[1.25px] text-white transition-all duration-300 hover:bg-[#03465C]/90"
-                    onClick={() => {
-                      const addToCartButton = productFormRef.current?.querySelector(
-                        'button[type="submit"]',
-                      ) as HTMLButtonElement | null;
-                      if (addToCartButton) {
-                        addToCartButton.click();
-                      }
-                    }}
-                  >
-                    <span className="transition-transform duration-300 group-hover:-translate-x-2">
-                      ADD TO CART
-                    </span>
-                    <div className="absolute right-0 flex h-full w-0 items-center justify-center bg-[#006380] transition-all duration-300 group-hover:w-[2.5em]">
-                      <Image
-                        src={addToCart}
-                        className=""
-                        alt="Add to Cart"
-                        unoptimized={true}
-                        width={44}
-                        height={44}
-                      />
+                  {productAvailability === 'Unavailable' ? (
+                    <div className="flex flex-col items-center">
+                      <button
+                        id="add-to-cart"
+                        className="group relative flex h-[3.5em] w-full items-center justify-center overflow-hidden rounded-[4px] !bg-[#b1b9bc] text-center text-[14px] font-medium uppercase leading-[32px] tracking-[1.25px] text-[#353535] transition-all duration-300 hover:bg-[#03465c]/90 disabled:opacity-50"
+                        disabled
+                      >
+                        <span>ADD TO CART</span>
+                      </button>
+                      <p className="text-center text-[12px] text-[#2e2e2e]">
+                        This product is currently unavailable
+                      </p>
                     </div>
-                  </button>
+                  ) : (
+                    <button
+                      className="group relative flex h-[3em] w-[14em] items-center justify-center overflow-hidden bg-[#03465C] text-center text-[14px] font-medium uppercase leading-[32px] tracking-[1.25px] text-white transition-all duration-300 hover:bg-[#03465C]/90"
+                      onClick={() => {
+                        const addToCartButton = productFormRef.current?.querySelector(
+                          'button[type="submit"]',
+                        ) as HTMLButtonElement | null;
+                        if (addToCartButton) {
+                          addToCartButton.click();
+                        }
+                      }}
+                    >
+                      <span className="transition-transform duration-300 group-hover:-translate-x-2">
+                        ADD TO CART
+                      </span>
+                      <div className="absolute right-0 flex h-full w-0 items-center justify-center bg-[#006380] transition-all duration-300 group-hover:w-[2.5em]">
+                        <Image
+                          src={addToCart}
+                          className=""
+                          alt="Add to Cart"
+                          unoptimized={true}
+                          width={44}
+                          height={44}
+                        />
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -426,295 +441,233 @@ export const Details = ({
             } px-[20px] pt-[20px]`}
           >
             {/* Mobile View Button */}
-            <button
-              className="group relative flex h-[3em] w-full items-center justify-center overflow-hidden bg-[#03465C] text-center text-[14px] font-medium uppercase leading-[32px] tracking-[1.25px] text-white"
-              onClick={() => {
-                const addToCartButton = productFormRef.current?.querySelector(
-                  'button[type="submit"]',
-                ) as HTMLButtonElement | null;
-                if (addToCartButton) {
-                  addToCartButton.click();
-                }
-              }}
-            >
-              <span className="transition-transform duration-300 group-hover:-translate-x-2">
-                ADD TO CART
-              </span>
-              <div className="absolute right-0 flex h-full w-0 items-center justify-center bg-[#006380] transition-all duration-300 group-hover:w-12">
-                <Image
-                  src={addToCart}
-                  className=""
-                  alt="Add to Cart"
-                  unoptimized={true}
-                  width={44}
-                  height={44}
-                />
+            {productAvailability === 'Unavailable' ? (
+              <div className="flex flex-col items-center">
+                <button
+                  id="add-to-cart"
+                  className="group relative flex h-[3.5em] w-full items-center justify-center overflow-hidden rounded-[4px] !bg-[#b1b9bc] text-center text-[14px] font-medium uppercase leading-[32px] tracking-[1.25px] text-[#353535] transition-all duration-300 hover:bg-[#03465c]/90 disabled:opacity-50"
+                  disabled
+                >
+                  <span>ADD TO CART</span>
+                </button>
+                <p className="text-center text-[12px] text-[#2e2e2e]">
+                  This product is currently unavailable
+                </p>
               </div>
-            </button>
+            ) : (
+              <button
+                className="group relative flex h-[3em] w-full items-center justify-center overflow-hidden bg-[#03465C] text-center text-[14px] font-medium uppercase leading-[32px] tracking-[1.25px] text-white"
+                onClick={() => {
+                  const addToCartButton = productFormRef.current?.querySelector(
+                    'button[type="submit"]',
+                  ) as HTMLButtonElement | null;
+                  if (addToCartButton) {
+                    addToCartButton.click();
+                  }
+                }}
+              >
+                <span className="transition-transform duration-300 group-hover:-translate-x-2">
+                  ADD TO CART
+                </span>
+                <div className="absolute right-0 flex h-full w-0 items-center justify-center bg-[#006380] transition-all duration-300 group-hover:w-12">
+                  <Image
+                    src={addToCart}
+                    className=""
+                    alt="Add to Cart"
+                    unoptimized={true}
+                    width={44}
+                    height={44}
+                  />
+                </div>
+              </button>
+            )}
           </div>
         </>
       )}
-       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          display: none; /* Hides scrollbar for Chrome, Safari, Edge */
-        }
 
-        .custom-scrollbar {
-          -ms-overflow-style: none; /* Hides scrollbar for IE and Edge */
-          scrollbar-width: none; /* Hides scrollbar for Firefox */
-        }
+      <ScrollContainer>
+        <div className="main-div-product-details mb-[35px] xl:mb-[0px]">
+          <div className="div-product-details mt-[30px] xl:mt-[0px]">
+            {/* Add relative positioning wrapper */}
+            <div className="relative">
+              <h1 className="product-name mb-3 text-center text-[24px] font-medium leading-[2rem] tracking-[0.15px] text-[#353535] sm:text-center md:mt-6 lg:mt-0 xl:mt-0 xl:text-left xl:text-[1.5rem] xl:font-normal xl:leading-[2rem]">
+                {product.name}
+              </h1>
+            </div>
 
-        .cursor-grab:active {
-          cursor: grabbing; /* Changes cursor while dragging */
-        }
-
-        .smooth-scroll {
-          scroll-behavior: smooth; /* Smooth scrolling */
-        }
-      `}</style>
-<div 
-    ref={scrollableRef}
-    onMouseDown={handleMouseDown}
-    onMouseMove={handleMouseMove}
-    onMouseUp={handleMouseUp}
-    onMouseLeave={handleMouseUp}
-    className="custom-scrollbar h-[600px] w-full overflow-y-scroll cursor-grab ">
-      <div className="div-product-details">
-        <h1 className="product-name mb-3 text-center text-[1.25rem] font-medium leading-[2rem] tracking-[0.15px] sm:text-center md:mt-6 lg:mt-0 lg:text-left xl:mt-0 xl:text-[1.5rem] xl:font-normal xl:leading-[2rem]">
-          {product.name}
-        </h1>
-
-        <div className="items-center space-x-1 text-center lg:text-left xl:text-left">
-          <span className="OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-black lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
-            SKU: <span>{product.mpn}</span>
-          </span>
-          <span className="OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-black lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
-            by{' '}
-            <Link
-              href={product.brand?.path ?? ''}
-              className="products-underline border-b border-black"
-            >
-              {product.brand?.name}
-            </Link>
-          </span>
-          {collectionValue && (
-            <span className="product-collection OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-black lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
-              from the{' '}
-              <Link
-                href={`/search?brand_name[0]=${encodeURIComponent(product.brand?.name ?? '')}&collection[0]=${encodeURIComponent(collectionValue)}`}
-                className="products-underline border-b border-black"
-              >
-                {collectionValue}
-              </Link>{' '}
-              Family
-            </span>
-          )}
-        </div>
-
-        <ReviewSummary data={product} />
-      </div>
-        {/* {console.log(product.prices.price.value)} */}
-        {/* priceMaxCodeDisount?.discount &&
-        <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
-          {format.number(product.prices.price.value, {
-            style: 'currency',
-            currency: product.prices.price.currencyCode + '--',
-          })} */}
-      {/* {product.prices && (
-        <div className="product-price mt-2 flex items-center gap-[0.5em] text-center lg:text-left">
-          {product.prices.basePrice?.value !== undefined &&
-          product.prices.price?.value !== undefined &&
-          product.prices.basePrice.value > product.prices.price.value ? (
-            <>
-            --------------
-              <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
-                {format.number(product.prices.price.value, {
-                  style: 'currency',
-                  currency: product.prices.price.currencyCode + '--',
-                })}
+            <div className="items-center space-x-1 text-center xl:text-left">
+              <span className="OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-[#353535] lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
+                SKU: <span>{product.mpn}</span>
               </span>
-              <span className="text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through">
-                {format.number(product.prices.basePrice.value, {
-                  style: 'currency',
-                  currency: product.prices.price.currencyCode + '--1',
-                })}
+              <span className="OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-[#353535] lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
+                by{' '}
+                <Link
+                  href={product.brand?.path ?? ''}
+                  className="products-underline border-b border-black"
+                >
+                  {product.brand?.name}
+                </Link>
               </span>
-              <span className="text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
-                Save{' '}
-                {Math.round(
-                  ((product.prices.basePrice.value - product.prices.price.value) /
-                    product.prices.basePrice.value) *
-                    100,
-                )}
-                %
-              </span>
-            </>
-          ) : (
-                ActivationCouponCode &&
-            <span className="text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
-              <p>dshgafdjfads {priceMaxCodeDisount?.discount}</p>
-                    {console.log(priceMaxCodeDisount?.discount)}
-              {format.number(product.prices.price?.value || 0, {
-                style: 'currency',
-                currency: product.prices.price?.currencyCode || 'USD',
-              })}
-            </span>
-          )}
-        </div>
-      )} */}
-
-        {product.prices && (
-          <div className="product-price mt-2 flex items-center gap-[0.5em] text-center lg:text-left">
-            {product.prices.activation_sale_price  ? (
-              <>
-                <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
-                  {format.number(product.prices?.activation_sale_price?.value,{
-                    style: 'currency',
-                      currency: product.prices?.activation_sale_price?.currencyCode ,
-                  })}
+              {collectionValue && (
+                <span className="product-collection OpenSans text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.25px] text-[#353535] lg:text-left xl:text-[0.875rem] xl:leading-[1.5rem] xl:tracking-[0.25px]">
+                  from the{' '}
+                  <Link
+                    href={`/search?brand_name[0]=${encodeURIComponent(
+                      product.brand?.name ?? '',
+                    )}&collection[0]=${encodeURIComponent(collectionValue)}`}
+                    className="products-underline border-b border-black"
+                  >
+                    {collectionValue}
+                  </Link>{' '}
+                  Family
                 </span>
-                <span className="text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through">
-                  {format.number(product.prices?.activation_sale_price?.original_price, {
-                    style: 'currency',
-                    currency: product.prices.price.currencyCode ,
-                  })}
-                </span>
-                { <span className="text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
-                  Save{' '}
-                  {/* {Math.round(
-                    ((product.prices.basePrice.value - product.prices.price.value) /
-                      product.prices.basePrice.value) *
-                    100,
-                  )} */}
-                  {Number(product?.prices?.activation_sale_price?.discount)}%
-                </span>}
-              </>
-            ) : (
-              product.prices.basePrice?.value !== undefined &&
-                product.prices.price?.value !== undefined &&
-                product.prices.basePrice.value > product.prices.price.value ? (
+              )}
+            </div>
+            <ReviewSummary data={product} />
+          </div>
+          {/* msrp  */}
+          {product?.['UpdatePriceForMSRP'] && (
+            <div className="product-price mt-2 flex items-center gap-[0.5em] text-center lg:text-left">
+              {product?.UpdatePriceForMSRP &&
+                      product?.UpdatePriceForMSRP.hasDiscount === true ? (
+                // retailPrice, salePrice, basePrice
                 <>
                   <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
-                    {format.number(product.prices.price.value, {
+                    {format.number(product.UpdatePriceForMSRP.updatedPrice, {
                       style: 'currency',
-                      currency: product.prices.price.currencyCode ,
+                      currency: product.updatePriceForMSRP?.currencyCode?.currencyCode || 'USD' ,
                     })}
                   </span>
-                  <span className="text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through">
-                    {format.number(product.prices.basePrice.value, {
+                  <span className="inline-flex items-baseline text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through sm:mr-0">
+                    {format.number(product.UpdatePriceForMSRP.originalPrice, {
                       style: 'currency',
-                      currency: product.prices.price.currencyCode ,
+                      currency:  product.updatePriceForMSRP?.currencyCode?.currencyCode|| 'USD',
                     })}
                   </span>
+                  <span className="-ml-[0.5em] mb-1 text-[12px] text-gray-500">MSRP</span>
                   <span className="text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
                     Save{' '}
-                    {Math.round(
-                      ((product.prices.basePrice.value - product.prices.price.value) /
-                        product.prices.basePrice.value) *
-                      100,
-                    )}
+                    {product.UpdatePriceForMSRP.discount}
                     %
                   </span>
                 </>
               ) : (
-                  <span className="text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
-                    {format.number(product.prices.price?.value || 0, {
-                      style: 'currency',
-                      currency: product.prices.price?.currencyCode || 'USD',
-                    })}
-                  </span>
-              )
+                <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
+                  {format.number(product.UpdatePriceForMSRP.originalPrice || 0, {
+                    style: 'currency',
+                    currency: product.updatePriceForMSRP?.currencyCode?.currencyCode || 'USD',
+                  })}
+                </span>
+              )}
+            </div>
+          )}
+          {/* msrp  */}
+
+          <Coupon couponIcon={couponIcon} />
+
+          <div className="free-shipping-detail mb-[25px] text-center xl:text-left">
+            {selectedVariantId && (
+              <FreeDelivery
+                entityId={product.entityId}
+                variantId={selectedVariantId}
+                isFromPDP={true}
+              />
             )}
+            {getAllCommonSettinngsValues.hasOwnProperty(product?.brand?.entityId) &&
+              getAllCommonSettinngsValues?.[product?.brand?.entityId]?.no_ship_canada && (
+                <NoShipCanada
+                description={getAllCommonSettinngsValues?.[product?.brand?.entityId]?.no_ship_canada_message}
+                />
+              )}
           </div>
-        )}
 
+          <div ref={productFormRef}>
+            <ProductForm
+              data={product}
+              productMpn={product.mpn || ''}
+              multipleOptionIcon={multipleOptionIcon}
+              blankAddImg={blankAddImg}
+              productImages={productImages}
+              fanPopup={fanPopup}
+              closeIcon={closeIcon}
+            />
+          </div>
 
-      <Coupon couponIcon={couponIcon} />
-      <FreeDelivery />
-      {getAllCommonSettinngsValues.hasOwnProperty(product?.brand?.entityId) && getAllCommonSettinngsValues?.[product?.brand?.entityId]?.no_ship_canada  &&
-          <NoShipCanada description={getAllCommonSettinngsValues?.[product?.brand?.entityId]?.no_ship_canada_message} />
-      }
+          <div className="div-product-description my-12 hidden">
+            <h2 className="mb-4 text-xl font-bold md:text-2xl">{t('additionalDetails')}</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {Boolean(product.sku) && (
+                <div>
+                  <h3 className="font-semibold">{t('sku')}</h3>
+                  <p>{product.sku}</p>
+                </div>
+              )}
+              {Boolean(product.upc) && (
+                <div>
+                  <h3 className="font-semibold">{t('upc')}</h3>
+                  <p>{product.upc}</p>
+                </div>
+              )}
+              {Boolean(product.minPurchaseQuantity) && (
+                <div>
+                  <h3 className="font-semibold">{t('minPurchase')}</h3>
+                  <p>{product.minPurchaseQuantity}</p>
+                </div>
+              )}
+              {Boolean(product.maxPurchaseQuantity) && (
+                <div>
+                  <h3 className="font-semibold">{t('maxPurchase')}</h3>
+                  <p>{product.maxPurchaseQuantity}</p>
+                </div>
+              )}
+              {Boolean(product.availabilityV2.description) && (
+                <div>
+                  <h3 className="font-semibold">{t('availability')}</h3>
+                  <p>{product.availabilityV2.description}</p>
+                </div>
+              )}
+              {Boolean(product.condition) && (
+                <div>
+                  <h3 className="font-semibold">{t('condition')}</h3>
+                  <p>{product.condition}</p>
+                </div>
+              )}
+              {Boolean(product.weight) && (
+                <div>
+                  <h3 className="font-semibold">{t('weight')}</h3>
+                  <p>
+                    {product.weight?.value} {product.weight?.unit}
+                  </p>
+                </div>
+              )}
+              {Boolean(customFields) &&
+                customFields.map((customField) => (
+                  <div key={customField.entityId}>
+                    <h3 className="font-semibold">{customField.name}</h3>
+                    <p>{customField.value}</p>
+                  </div>
+                ))}
+            </div>
+          </div>
 
-      <div ref={productFormRef}>
-        <ProductForm
-          data={product}
-          productMpn={product.mpn || ''}
-          multipleOptionIcon={multipleOptionIcon}
-          blankAddImg={blankAddImg}
-          productImages={productImages}
-          fanPopup={fanPopup}
-          closeIcon={closeIcon}
-        />
-      </div>
+          <ProductSchema product={product} />
+          <PayPalPayLater
+            amount={product?.prices?.price?.value?.toString()}
+            currency={product?.prices?.price?.currencyCode}
+          />
+            <RequestQuote children={children3} />
+          <CertificationsAndRatings certificationIcon={certificationIcon} product={product} />
+          <ProductDetailDropdown product={product} dropdownSheetIcon={dropdownSheetIcon} />
 
-      <div className="div-product-description my-12 hidden">
-        <h2 className="mb-4 text-xl font-bold md:text-2xl">{t('additionalDetails')}</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {Boolean(product.sku) && (
-            <div>
-              <h3 className="font-semibold">{t('sku')}</h3>
-              <p>{product.sku}</p>
-            </div>
-          )}
-          {Boolean(product.upc) && (
-            <div>
-              <h3 className="font-semibold">{t('upc')}</h3>
-              <p>{product.upc}</p>
-            </div>
-          )}
-          {Boolean(product.minPurchaseQuantity) && (
-            <div>
-              <h3 className="font-semibold">{t('minPurchase')}</h3>
-              <p>{product.minPurchaseQuantity}</p>
-            </div>
-          )}
-          {Boolean(product.maxPurchaseQuantity) && (
-            <div>
-              <h3 className="font-semibold">{t('maxPurchase')}</h3>
-              <p>{product.maxPurchaseQuantity}</p>
-            </div>
-          )}
-          {Boolean(product.availabilityV2.description) && (
-            <div>
-              <h3 className="font-semibold">{t('availability')}</h3>
-              <p>{product.availabilityV2.description}</p>
-            </div>
-          )}
-          {Boolean(product.condition) && (
-            <div>
-              <h3 className="font-semibold">{t('condition')}</h3>
-              <p>{product.condition}</p>
-            </div>
-          )}
-          {Boolean(product.weight) && (
-            <div>
-              <h3 className="font-semibold">{t('weight')}</h3>
-              <p>
-                {product.weight?.value} {product.weight?.unit}
-              </p>
-            </div>
-          )}
-          {Boolean(customFields) &&
-            customFields.map((customField) => (
-              <div key={customField.entityId}>
-                <h3 className="font-semibold">{customField.name}</h3>
-                <p>{customField.value}</p>
-              </div>
-            ))}
+          {/* <ShippingReturns /> */}
+
+          <div className="flex justify-center gap-4 xl:mt-7">
+            <Flyout triggerLabel={triggerLabel1}>{children1}</Flyout>
+
+            <Flyout triggerLabel={triggerLabel2}>{children2}</Flyout>
+          </div>
         </div>
-      </div>
-
-      <ProductSchema product={product} />
-      <PayPalPayLater
-        amount={product?.prices?.price?.value?.toString()}
-        currency={product?.prices?.price?.currencyCode}
-      />
-      <RequestQuote requestQuote={requestQuote} />
-      <CertificationsAndRatings certificationIcon={certificationIcon} product={product} />
-      <ProductDetailDropdown product={product} dropdownSheetIcon={dropdownSheetIcon} />
-      <ShippingReturns />
-    </div>
-   
+      </ScrollContainer>
     </div>
   );
 };

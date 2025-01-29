@@ -18,7 +18,16 @@ function moveToTheEnd(arr: any, word: string) {
   });
   return arr;
 }
-export default function CartProductComponent({ currencyCode, product, deleteIcon, cartId,priceAdjustData,ProductType }: Props) {
+interface Props {
+  currencyCode: string;
+  product: any;
+  cartId: string;
+  priceAdjustData: any;
+  ProductType: string;
+  cookie_agent_login_status: boolean;
+}
+
+export default function CartProductComponent({ currencyCode, product, cartId, priceAdjustData, ProductType, cookie_agent_login_status }: Props) {
   const changeTheProtectedPosition = moveToTheEnd(
     product?.selectedOptions,
     'Protect Your Purchase',
@@ -65,7 +74,10 @@ export default function CartProductComponent({ currencyCode, product, deleteIcon
 
         <div className="flex-1">
           <p className="hidden text-base text-gray-500">{product?.brand}</p>
-          <div className="grid gap-1 lg:grid-cols-[40%_20%_40%]">
+            <div className={`grid gap-1 grid-cols-1 sm:grid-cols-[auto_auto] ${cookie_agent_login_status == true
+              ? "xl:grid-cols-[40%_20%_40%]"
+              : "xl:grid-cols-[60%_40%]"
+              }`}>
             <div className="">
               <p className="text-left text-[1rem] font-normal leading-[2rem] tracking-[0.009375rem] text-[#353535]">
                 {product?.name}
@@ -187,7 +199,7 @@ export default function CartProductComponent({ currencyCode, product, deleteIcon
             </div>
             <div className="">
               <div className="cart-deleteIcon relative flex flex-col gap-0 text-right md:items-end md:gap-2">
-                <RemoveItem currency={currencyCode} product={product} deleteIcon={deleteIcon} />
+                <RemoveItem currency={currencyCode} product={product} />
                 <div className="mb-[20px] md:mb-0">
                   {/* <div className="flex items-center gap-[3px] text-[14px] font-normal leading-[24px] tracking-[0.25px] text-[#353535]">
                     {product?.originalPrice?.value &&
@@ -206,18 +218,18 @@ export default function CartProductComponent({ currencyCode, product, deleteIcon
                   </div> */}
                   <p className="text-left md:text-right">
                     {
-                    format.number(product?.listPrice?.value, {
+                    format.number(product?.listPrice?.value * product?.quantity, {
                       style: 'currency',
                       currency: currencyCode,
                     })
                     }
                   </p>
                 </div>
-                <ItemQuantity product={product} />
+                  {cookie_agent_login_status == true && <ItemQuantity product={product} />}
               </div>
             </div>
             <div className="overflow-x-hidden pl-[10px]">
-              <ProductPriceAdjuster
+                {cookie_agent_login_status ==true && <ProductPriceAdjuster
                  parentSku={priceAdjustData?.parent_sku}
                   sku={priceAdjustData?.sku}
                   oem_sku={priceAdjustData?.oem_sku}
@@ -228,7 +240,7 @@ export default function CartProductComponent({ currencyCode, product, deleteIcon
                   productId={priceAdjustData?.id}
                   cartId={cartId}
                   ProductType={ProductType}
-              />
+              />}
             </div>
           </div>
         </div>

@@ -28,6 +28,25 @@ import ScrollButton from './_components/ScrollButton';
 import { NoShipCanada } from '../product/[slug]/_components/belami-product-no-shipping-canada';
 import { ChangePriceBasedOnActivationCodeAndShow, commonSettinngs } from '~/components/common-functions';
 import { zeroTaxCalculation } from '~/components/common-functions';
+import { calculateProductPrice } from '~/components/common-functions';
+
+import heartIcon from '~/public/cart/heartIcon.svg';
+import applePayIcon from '~/public/cart/applePayIcon.svg';
+import paypalIcon from '~/public/cart/paypalIcon.svg';
+import amazonPayIcon from '~/public/cart/amazonPayIcon.svg';
+import agentIcon from '~/public/cart/agentIcon.svg';
+import { Page as MakeswiftPage } from '~/lib/makeswift';
+import { Flyout } from '~/components/common-flyout';
+
+interface Params {
+  locale: string;
+}
+
+
+
+interface Props {
+  params: Promise<Params> | Params; // Support both Promise and object
+}
 
 const CartPageQuery = graphql(
   `
@@ -60,7 +79,8 @@ export async function generateMetadata() {
   };
 }
 
-export default async function Cart() {
+export default async function Cart({ params }: Props) {
+  const { locale } = await params;
   const cookieStore = await cookies();
 
   const cartId = cookieStore.get('cartId')?.value;
@@ -94,35 +114,32 @@ export default async function Cart() {
   if (!cart) {
     return <EmptyCart />;
   }
-  const CustomItems = cart?.lineItems?.customItems
+  const CustomItems = cart?.lineItems?.customItems;
   const get_product_price_data_in_cart = async (cartId: any) => {
-  const result = await get_cart_price_adjuster_data(cartId);
-    if (result.status === 200) {      
+    const result = await get_cart_price_adjuster_data(cartId);
+    if (result.status === 200) {
       return result?.data?.output;
     } else {
-    return [{ error: 'Failed to retrive data' }];
+      return [{ error: 'Failed to retrive data' }];
     }
   };
-  const product_data_in_cart = cookie_agent_login_status ? await get_product_price_data_in_cart(cartId):[];
+  const product_data_in_cart = cookie_agent_login_status
+    ? await get_product_price_data_in_cart(cartId)
+    : [];
   const lineItems: any = [
     ...cart.lineItems.physicalItems,
     ...cart.lineItems.digitalItems,
     // ...cart.lineItems.customItems,
-  ];
+  ];  
   let cartQty = lineItems?.reduce(function (total: number, cartItems: any) {
     return total + cartItems?.quantity;
   }, 0);
   let cartItemsText = cartQty > 1 ? ' Items' : ' Item';
   const deleteIcon = imageManagerImageUrl('delete.png', '20w');
-  const downArrow = imageManagerImageUrl('downarrow.png', '20w');
-  const agentIcon = imageManagerImageUrl('agent-icon.png', '20w');
-  const heartIcon = imageManagerImageUrl('hearticon.png', '20w');
-  const applePayIcon = imageManagerImageUrl('applepay.png', '60w');
-  const amazonPayIcon = imageManagerImageUrl('amazonpay.png', '125w');
-  const paypalIcon = imageManagerImageUrl('fill-11.png', '25w');
   const closeIcon = imageManagerImageUrl('close.png', '25w');
   const format = await getFormatter();
   let getCartMetaFields: any = await GetCartMetaFields(cartId, 'accessories_data');
+  
   let updatedLineItemInfo: any = [];
   let updatedLineItemWithoutAccessories: any = [];
   let accessoriesSkuArray: any = [];
@@ -140,8 +157,8 @@ export default async function Cart() {
             let accessoriesInfo = lineItems?.find(
               (line: any) => line?.variantEntityId == getInfo?.variantId,
             );
-            if(accessoriesInfo) {
-              let accessSpreadData: any = {...accessoriesInfo};
+            if (accessoriesInfo) {
+              let accessSpreadData: any = { ...accessoriesInfo };
               if (accessSpreadData) {
                 accessSpreadData.prodQuantity = getInfo.quantity;
                 accessSpreadData.cartId = cartId;
@@ -152,7 +169,7 @@ export default async function Cart() {
           });
         }
       }
-      if(accessoriesData?.length > 0) {
+      if (accessoriesData?.length > 0) {
         item['accessories'] = accessoriesData;
       }
       if (!accessoriesSkuArray?.includes(item?.variantEntityId)) {
@@ -168,10 +185,14 @@ export default async function Cart() {
       updatedLineItemWithoutAccessories.push(item);
     }
   });
-  const breadcrumbs: any = [{
-    label: "Your Cart",
-    href: '#'
-  }];
+  const breadcrumbs: any = [
+    {
+      label: 'Your Cart',
+      href: '#',
+    },
+  ];
+
+
   var getBrandIds = lineItems?.map((item: any) => {
     return item?.baseCatalogProduct?.brand?.entityId;
   });
@@ -186,10 +207,9 @@ export default async function Cart() {
   
   return (
     <div className="cart-page mx-auto mb-[2rem] max-w-[93.5%] pt-8">
-      <div className=' sticky top-2 z-50 '>
-      <ContinuetocheckoutButton cartId={cartId} />
+      <div className="sticky top-2 z-50">
+        <ContinuetocheckoutButton cartId={cartId} />
       </div>
-    
 
       <div className="pt-6 text-center lg:hidden">
         <div className="inline-flex items-center gap-2 text-[20px] font-medium leading-[32px] tracking-[0.15px] text-[#002A37]">
@@ -198,17 +218,15 @@ export default async function Cart() {
             style: 'currency',
             currency: cart?.currencyCode,
           })}
-
         </div>
-       
       </div>
-      <div className=" text-center lg:hidden">
-      <ScrollButton targetId="order-summary" accessoriesData={getCartMetaFields} />
+      <div className="text-center lg:hidden">
+        <ScrollButton targetId="order-summary"/>
       </div>
 
       <ComponentsBreadcrumbs className="mt-1" breadcrumbs={breadcrumbs} />
 
-      <h1 className="cart-heading  pt-0 text-center text-[24px] font-normal leading-[32px]  lg:text-left lg:text-[24px]">
+      <h1 className="cart-heading pt-0 text-center text-[24px] font-normal leading-[32px] lg:text-left lg:text-[24px]">
         {`${t('heading')} (${cartQty} ${cartItemsText})`}
       </h1>
 
@@ -226,44 +244,48 @@ export default async function Cart() {
           </div>
         </div>
       </div>
-      
+
       <div className="cart-right-side-details px-18 w-full pb-0 md:grid md:grid-cols-2 md:!gap-[6rem] lg:grid-cols-3 [@media_(min-width:1200px)]:pb-[40px]">
-        
         <ul className="cart-details-item col-span-2 lg:w-full">
-          {UpdateAndShowUrlCodeActivationPrice.map((product: any ) => (
-              <CartItem
-                brandId={product?.baseCatalogProduct?.brand?.entityId}
-                currencyCode={cart.currencyCode}
-                key={product.entityId}
-                product={product}
-                deleteIcon={deleteIcon}
-                cartId={cart?.entityId}
-                priceAdjustData={product_data_in_cart?.physical_items?.[product?.entityId]}
-                ProductType={"product"}
-                cookie_agent_login_status={cookie_agent_login_status === 'true' ? true : false}
-                getAllCommonSettinngsValues={getAllCommonSettinngsValues}
-              />
+
+          {updatedLineItemWithoutAccessories.map((product: any) => (
+            <CartItem
+              brandId={product?.baseCatalogProduct?.brand?.entityId}
+              currencyCode={cart.currencyCode}
+              key={product.entityId}
+              product={product}
+              deleteIcon={deleteIcon}
+              cartId={cart?.entityId}
+              priceAdjustData={product_data_in_cart?.physical_items?.[product?.entityId]}
+              ProductType={'product'}
+              cookie_agent_login_status={cookie_agent_login_status === 'true' ? true : false}
+              getAllCommonSettinngsValues={getAllCommonSettinngsValues}
+            />
           ))}
-          {
-            cookie_agent_login_status === 'true' &&
-            CustomItems.length > 0 && CustomItems?.map((data)=>{
+          {cookie_agent_login_status === 'true' &&
+            CustomItems.length > 0 &&
+            CustomItems?.map((data) => {
               return (
-              <CartProductComponent
-                key={data.entityId}
-                cartId={cart.entityId}
-                currencyCode={cart.currencyCode}
-                product={data}
-                deleteIcon={deleteIcon}
-                priceAdjustData={product_data_in_cart?.custom_items &&  product_data_in_cart?.custom_items[data?.entityId]}
-                ProductType={"custom"}
-                cookie_agent_login_status={cookie_agent_login_status === 'true' ? true : false}
-              />
-              )
-            })
-          }
+                <CartProductComponent
+                  key={data.entityId}
+                  cartId={cart.entityId}
+                  currencyCode={cart.currencyCode}
+                  product={data}
+                  priceAdjustData={
+                    product_data_in_cart?.custom_items &&
+                    product_data_in_cart?.custom_items[data?.entityId]
+                  }
+                  ProductType={'custom'}
+                  cookie_agent_login_status={cookie_agent_login_status === 'true' ? true : false}
+                />
+              );
+            })}
         </ul>
 
-        <div id="order-summary" className="cart-right-side sticky top-0 col-span-1 col-start-2 -mt-[9em] h-[100px] min-h-[800px] border-t border-[#CCCBCB] py-[1.4em] lg:col-start-3">
+        <div
+          id="order-summary"
+          className="cart-right-side sticky top-0 col-span-1 col-start-2 -mt-[9em] h-[100px] min-h-[800px] border-t border-[#CCCBCB] py-[1.4em] lg:col-start-3"
+        >
           {checkout && <CheckoutSummary checkout={checkout} geography={geography} />}
 
           <CheckoutButton cartId={cartId} />
@@ -271,12 +293,28 @@ export default async function Cart() {
           <PaypalButton cartId={cartId} icon={paypalIcon} />
           <AmazonpayButton cartId={cartId} icon={amazonPayIcon} />
           <div className="pt-1"></div>
-          <p className="pt-2 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#002A37] underline underline-offset-4">
-            Return Policy
-          </p>
-          <p className="pt-2 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#002A37] underline underline-offset-4">
-            Shipping Policy
-          </p>
+
+          
+          <Flyout
+              triggerLabel={
+                <p className="pt-2 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#002A37] underline underline-offset-4">
+                  Shipping Policy
+                </p>
+              }
+            >
+              <MakeswiftPage locale={locale} path="/content/shipping-flyout" />
+            </Flyout>
+          <div>
+          <Flyout
+            triggerLabel={
+              <p className="pt-2 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#002A37] underline underline-offset-4">
+                Return Policy
+              </p>
+            }
+          >
+            <MakeswiftPage locale={locale} path="/content/returns-flyout" />
+          </Flyout>
+          </div>
           <p className="flex items-center pt-2 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#002A37] underline underline-offset-4">
             <BcImage
               alt="Agent Icon"
@@ -290,7 +328,7 @@ export default async function Cart() {
         </div>
       </div>
 
-      <CartViewed checkout={checkout} currencyCode={cart.currencyCode} lineItems={lineItems} />
+      <CartViewed currencyCode={cart.currencyCode} lineItems={lineItems} />
     </div>
   );
 }

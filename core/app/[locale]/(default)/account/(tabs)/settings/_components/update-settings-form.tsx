@@ -237,7 +237,6 @@ export const UpdateSettingsForm = ({
             <TextField
               defaultValue={customerInfo.email}
               entityId={FieldNameToFieldId.email}
-              isRequired
               isValid={textInputValid[FieldNameToFieldId.email]}
               label={
                 customerFields.find((field) => field.entityId === FieldNameToFieldId.email)
@@ -246,6 +245,7 @@ export const UpdateSettingsForm = ({
               name="customer-email"
               onChange={handleTextInputValidation}
               type="email"
+              
             />
           </div>
           {customerFields
@@ -358,6 +358,7 @@ export const UpdateSettingsForm = ({
                         name={fieldName}
                         onValidate={setPicklistValid}
                         options={field.options}
+                        // formErrors={{}}
                       />
                     </FieldWrapper>
                   );
@@ -415,7 +416,7 @@ export const UpdateSettingsForm = ({
                 sitekey={reCaptchaSettings.siteKey}
               />
               {!isReCaptchaValid && (
-                <span className="absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal text-error">
+                <span className="absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal text-[rgb(167,31,35)] ">
                   {t('recaptchaText')}
                 </span>
               )}

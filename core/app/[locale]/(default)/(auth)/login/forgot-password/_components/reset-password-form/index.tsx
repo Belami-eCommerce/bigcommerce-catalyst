@@ -152,7 +152,7 @@ export const ResetPasswordForm = ({ reCaptchaSettings }: Props) => {
 
       <Form
         onSubmit={handleSubmit}
-        className="reset-pass-form mx-0 mt-0 flex max-w-[none] flex-col gap-[22px] pt-0 xsm:mx-auto md:mt-[30px] md:max-w-[514px] md:py-4 lg:p-0"
+        className="reset-pass-form mx-0 mt-0 flex flex-col gap-[22px] pt-0  md:mt-[30px] max-w-[704px] lg:max-w-[508px] md:mx-auto py-5 lg:p-0"
         ref={form}
       >
         <p className="text-[16px] font-normal leading-[32px] tracking-[0.5px] text-[#353535]">
@@ -193,7 +193,7 @@ export const ResetPasswordForm = ({ reCaptchaSettings }: Props) => {
                 sitekey={reCaptchaSettings.siteKey}
               />
               {!isReCaptchaValid && (
-                <span className="absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal text-red-200">
+                <span className="absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal text-[rgb(167,31,35)] ">
                   {t('recaptchaText')}
                 </span>
               )}
