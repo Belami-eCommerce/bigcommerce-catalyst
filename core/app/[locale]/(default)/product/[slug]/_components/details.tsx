@@ -215,7 +215,6 @@ export const Details = ({
   const showPriceRange =
     product.prices?.priceRange?.min?.value !== product.prices?.priceRange?.max?.value;
 
-    console.log("prod details from PDP------------",product);
   useEffect(() => {
     const matchingVariant = variants.find((variant) => variant.sku === productSku);
     if (matchingVariant) {
@@ -286,6 +285,8 @@ export const Details = ({
     return defaultValue?.label || 'Select';
   };
 
+  console.log(product);
+  
   return (
     <div className="sticky z-50">
       {showStickyHeader && (
@@ -357,18 +358,18 @@ export const Details = ({
                 <div className="flex items-center gap-4">
                   {product?.UpdatePriceForMSRP && (
                     <div className="sticky-product-price mt-2 !w-[16em] items-center whitespace-nowrap text-center lg:text-right">
-                      {product?.UpdatePriceForMSRP.hasDiscount === true ?(
+                      {product?.UpdatePriceForMSRP?.hasDiscount === true ?(
                         <>
                           <span className="price-1 mr-2 text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
-                            {format.number(product.UpdatePriceForMSRP.updatedPrice, {
+                            {format.number(product?.UpdatePriceForMSRP?.updatedPrice, {
                               style: 'currency',
-                              currency: product.UpdatePriceForMSRP.currencyCode,
+                              currency: product?.UpdatePriceForMSRP?.currencyCode,
                             })}
                           </span>
                           <span className="mr-2 text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through">
-                            {format.number(product.UpdatePriceForMSRP.originalPrice, {
+                            {format.number(product?.UpdatePriceForMSRP?.originalPrice, {
                               style: 'currency',
-                              currency: product.UpdatePriceForMSRP.currencyCode,
+                              currency: product?.UpdatePriceForMSRP?.currencyCode,
                             })}
                           </span>
                           <span className="-ml-[0.5em] mb-1 mr-2 text-left text-[12px] text-gray-500">
@@ -376,15 +377,15 @@ export const Details = ({
                           </span>
                           <span className="mr-2 text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-[#008BB7]">
                             Save
-                            {product.UpdatePriceForMSRP.discount}
+                            {product?.UpdatePriceForMSRP?.discount}
                             %
                           </span>
                         </>
                       ) : (
                         <span className="text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-[#008BB7]">
-                          {format.number(product.UpdatePriceForMSRP.originalPrice || 0, {
+                          {format.number(product?.UpdatePriceForMSRP?.originalPrice || 0, {
                             style: 'currency',
-                            currency: product.updatePriceForMSRP.currencyCode || 'USD',
+                            currency: product?.updatePriceForMSRP?.currencyCode || 'USD',
                           })}
                         </span>
                       )}

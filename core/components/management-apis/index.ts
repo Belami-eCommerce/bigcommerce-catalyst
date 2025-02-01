@@ -482,8 +482,9 @@ export const CommonSettingPriceMaxLogicApi = async (activationCode:any,brand_ids
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(postData),
-      cache: 'no-store',
-      
+      next: {
+        revalidate: 3600,
+      },
     });
 
     const data = await response.json();

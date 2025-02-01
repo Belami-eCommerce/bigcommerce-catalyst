@@ -25,7 +25,6 @@ import { ChangePriceBasedOnActivationCodeAndShow, ChangePriceBasedOnActivationCo
 import { cookies } from 'next/headers';
 import { Page as MakeswiftPage } from '~/lib/makeswift';
 import StickyScroll, { DetailsWrapper } from './_components/sticky';
-import { calculateProductPrice } from '~/components/common-functions';
 interface Props {
   params: Promise<{ slug: string; locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -238,9 +237,14 @@ export default async function ProductPage(props: Props) {
     var ActivationCouponCode =await getActivationCodeFromCookie()
     var UpdateAndShowUrlCodeActivationPrice = await ChangePriceBasedOnActivationCodeAndShowPDP(product, ActivationCouponCode,[brandId])
     if (UpdateAndShowUrlCodeActivationPrice){
-      product.prices.activation_sale_price = UpdateAndShowUrlCodeActivationPrice
+      if (updatedProduct.hasOwnProperty("UpdatePriceForMSRP")){
+        updatedProduct.UpdatePriceForMSRP.originalPrice = UpdateAndShowUrlCodeActivationPrice?.original_price
+        updatedProduct.UpdatePriceForMSRP.updatedPrice = UpdateAndShowUrlCodeActivationPrice?.value
+        updatedProduct.UpdatePriceForMSRP.hasDiscount=true
+        updatedProduct.UpdatePriceForMSRP.discount = UpdateAndShowUrlCodeActivationPrice?.discount
+      }
+      // product.prices.activation_sale_price = UpdateAndShowUrlCodeActivationPrice
     }    
-    
     return (
       <div className="products-detail-page mx-auto max-w-[93.5%] pt-8">
         <ProductProvider getMetaFields={productMetaFields}>

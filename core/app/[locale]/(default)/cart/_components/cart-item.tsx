@@ -275,7 +275,8 @@ export const CartItem = async ({
   if (discountedPrice > 0) {
     discountPriceText = discountedPrice + '% Off';
   }
-  let productSKU: string = retrieveMpnData(product, product?.productEntityId, product?.variantEntityId);
+  console.log(product);
+  
   // no_ship_canada_message  
   return (
     <li className="mb-[24px] border border-gray-200">
@@ -437,7 +438,7 @@ export const CartItem = async ({
               <div className="">
                 <div className="cart-deleteIcon relative flex flex-col gap-0 text-right sm:gap-2 md:items-end [&_.cart-item-delete]:absolute [&_.cart-item-delete]:right-0 [&_.cart-item-delete]:top-[50px] [&_.cart-item-delete]:sm:static [&_.cart-item-quantity]:mt-5 [&_.cart-item-quantity]:sm:mt-0">
                   <RemoveItem currency={currencyCode} product={product} />
-                  {cookie_agent_login_status == true ? (
+                  {cookie_agent_login_status == false ? (
                     <div className="mb-0">
                       <div className="flex items-center gap-[3px] text-[14px] font-normal leading-[24px] tracking-[0.25px] text-[#353535]">
                         {product?.originalPrice.value &&

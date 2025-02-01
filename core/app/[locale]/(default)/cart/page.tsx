@@ -198,9 +198,9 @@ export default async function Cart({ params }: Props) {
   });
   var getAllCommonSettinngsValues =await commonSettinngs([getBrandIds])
   // no_ship_canada_message
+  console.log("aaaaaaaaaaaaaaaaaaaaaaaaaa", ActivationUrlCode, getBrandIds)
   const UpdateAndShowUrlCodeActivationPrice = await ChangePriceBasedOnActivationCodeAndShow(updatedLineItemWithoutAccessories, ActivationUrlCode, getBrandIds)
-  
-  console.log(updatedLineItemWithoutAccessories);
+  console.log("--------------",UpdateAndShowUrlCodeActivationPrice.check);
   
 
   let checkZeroTax: any = await zeroTaxCalculation(data.site);
@@ -248,7 +248,7 @@ export default async function Cart({ params }: Props) {
       <div className="cart-right-side-details px-18 w-full pb-0 md:grid md:grid-cols-2 md:!gap-[6rem] lg:grid-cols-3 [@media_(min-width:1200px)]:pb-[40px]">
         <ul className="cart-details-item col-span-2 lg:w-full">
 
-          {updatedLineItemWithoutAccessories.map((product: any) => (
+          {UpdateAndShowUrlCodeActivationPrice.map((product: any) => (
             <CartItem
               brandId={product?.baseCatalogProduct?.brand?.entityId}
               currencyCode={cart.currencyCode}

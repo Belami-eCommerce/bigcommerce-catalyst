@@ -395,29 +395,56 @@ export const ChangePriceBasedOnActivationCodeAndShow = async (
 ) => {
   const getDiscountValue = await CommonSettingPriceMaxLogic(ActivationUrlCode, brandId);
  const DiscountValueObject = getDiscountValue?.length > 0 ? getDiscountValue?.[0]?.['bc_brand_ids'] : null;
-  const calculatePrice = (productItem: any) => {
+//  console.log('getDiscountValue', getDiscountValue);
+  var MsrpKeyUpdateProduct = calculateProductPrice(product);
+
+ MsrpKeyUpdateProduct= MsrpKeyUpdateProduct.map((productItem) => {
     if (DiscountValueObject?.includes(String(productItem.baseCatalogProduct.brand.entityId))) {
       if (ActivationUrlCode && DiscountValueObject && productItem?.originalPrice) {
         const discount = Number(getDiscountValue?.[0]?.["discount"]) || 0; // Default to 0 if undefined
         const value = productItem?.originalPrice.value;
-        const numericValue = Number(value) || 0; 
+        const numericValue = Number(value) || 0;
         const discountedValue = numericValue - (discount * numericValue) / 100;
-        productItem.activation_sale_price = {
-          original_price: numericValue,
-          value: discountedValue,
+        productItem.UpdatePriceForMSRP = {
+          originalPrice: numericValue,
+          updatedPrice: discountedValue,
           currencyCode: productItem?.prices?.price?.currencyCode || 'USD', // Default to 'USD'
           discount: discount,
+          hasDiscount: true,
         };
         return productItem;
       }
     }
+    // console.log("productItem output--------",productItem);
+    
+
       return productItem;
-  };
-  if (Array.isArray(product)) {
-    return product.map((item) => calculatePrice(item));
-  } else {
-    return calculatePrice(product);
-  }
+  });
+  return MsrpKeyUpdateProduct;
+  // const calculatePrice = (productItem: any) => {   
+
+  //   // if (DiscountValueObject?.includes(String(productItem.baseCatalogProduct.brand.entityId))) {
+  //   //   if (ActivationUrlCode && DiscountValueObject && productItem?.originalPrice) {
+  //   //     const discount = Number(getDiscountValue?.[0]?.["discount"]) || 0; // Default to 0 if undefined
+  //   //     const value = productItem?.originalPrice.value;
+  //   //     const numericValue = Number(value) || 0; 
+  //   //     const discountedValue = numericValue - (discount * numericValue) / 100;
+  //   //     productItem.activation_sale_price = {
+  //   //       original_price: numericValue,
+  //   //       value: discountedValue,
+  //   //       currencyCode: productItem?.prices?.price?.currencyCode || 'USD', // Default to 'USD'
+  //   //       discount: discount,
+  //   //     };
+  //   //     return productItem;
+  //   //   }
+  //   // }
+  //   //   return productItem;
+  // };
+  // if (Array.isArray(product)) {
+  //   return product.map((item) => calculatePrice(item));
+  // } else {
+  //   return calculatePrice(product);
+  // }
 };
 
 
@@ -448,7 +475,7 @@ export const checkZeroTaxCouponIsApplied = async (checkoutData: any) => {
   return zeroTaxCoupon;
 };
 
-export const calculateProductPrice = async (products: any ) =>  {
+export const calculateProductPrice =  (products: any ) =>  {
   const isSingleProduct = !Array.isArray(products);
   const productArray = isSingleProduct ? [products] : products;
     const convertedPrices = productArray.map((product: any) => {
