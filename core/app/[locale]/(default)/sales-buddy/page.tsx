@@ -30,8 +30,7 @@ export default function SalesBuddyPage() {
       }
     }
   }, [path, searchParams, cartIdForCheck]);
-  
-  
+ 
   return (
     <div className='hidden sm:block md:block lg:block z-[999]'>{agentLoginStatus && <SalesBuddyAppIndex />}</div>
   );
