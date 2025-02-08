@@ -1,9 +1,11 @@
 import { removeEdgesAndNodes } from '@bigcommerce/catalyst-client';
 import { cache } from 'react';
-import { getSessionCustomerAccessToken } from '~/auth';
+import { getSessionCustomerAccessToken, getSessionUserDetails } from '~/auth';
 import { client } from '~/client';
 import { PaginationFragment } from '~/client/fragments/pagination';
 import { graphql, VariablesOf } from '~/client/graphql';
+import { BreadcrumbsFragment } from '~/components/breadcrumbs/fragment';
+import { GetCustomerGroupById, GetEmailId } from '~/components/management-apis';
 
 interface Price {
   value: number;
@@ -135,6 +137,15 @@ const WishlistsQuery = graphql(
                         status
                         description
                       }
+                      categories {
+                        edges {
+                          node {
+                            entityId
+                            name
+                            ...BreadcrumbsFragment
+                          }
+                        }
+                      }
                       name
                       sku
                       mpn
@@ -175,6 +186,10 @@ const WishlistsQuery = graphql(
                                 value
                                 currencyCode
                               }
+                              retailPrice {
+                                value
+                                currencyCode
+                              }
                             }
                           }
                         }
@@ -196,6 +211,10 @@ const WishlistsQuery = graphql(
                           value
                           currencyCode
                         }
+                        retailPrice {
+                          value
+                          currencyCode
+                        }
                       }
                     }
                   }
@@ -207,7 +226,7 @@ const WishlistsQuery = graphql(
       }
     }
   `,
-  [PaginationFragment],
+  [PaginationFragment, BreadcrumbsFragment],
 );
 
 type WishlistsVariables = VariablesOf<typeof WishlistsQuery>;
@@ -216,6 +235,7 @@ type WishlistsFiltersInput = WishlistsVariables['filters'];
 export const getWishlists = cache(
   async ({ limit = 3, before, after, filters }: GetWishlistsParams) => {
     const customerAccessToken = await getSessionCustomerAccessToken();
+
     const paginationArgs = before ? { last: limit, before } : { first: limit, after };
 
     const response = await client.fetch({
@@ -224,9 +244,9 @@ export const getWishlists = cache(
       fetchOptions: { cache: 'no-store' },
       customerAccessToken,
     });
-    
+
     const data = response.data as WishlistResponse;
-    
+
     if (!data?.customer) {
       return undefined;
     }

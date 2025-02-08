@@ -1,5 +1,30 @@
+import { getSessionUserDetails } from '~/auth';
 import { WishlistProductCard } from './wishlist-products-card';
+import { GetCustomerGroupById } from '~/components/management-apis';
+import { getWishlists } from '../page-data';
+interface CustomerGroup {
+  discount_rules: Array<{  amount: string;
+    type: string;
+    category_id: string;
+    product_id: string;
+    method: string; }>;
+}
 
-export default function WishlistPage() {
-  return <WishlistProductCard />;
+ const sessionUser = await getSessionUserDetails();
+  let customerGroupDetails:CustomerGroup = {
+    discount_rules: []
+  };
+  if(sessionUser){
+  const customerGroupId = sessionUser?.customerGroupId;
+  customerGroupDetails = await GetCustomerGroupById(customerGroupId);
+  }
+
+export default async function WishlistPage() {
+
+  const data = await getWishlists({
+    limit: 50,
+  });
+  console.log("Data==",data);
+
+  return <WishlistProductCard customerGroupDetails={customerGroupDetails}/>;
 }

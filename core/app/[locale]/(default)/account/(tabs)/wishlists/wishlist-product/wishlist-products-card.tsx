@@ -11,6 +11,8 @@ import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import { GetVariantsByProductId } from '~/components/management-apis';
 import { useCommonContext } from '~/components/common-context/common-provider';
+import { removeEdgesAndNodes } from '@bigcommerce/catalyst-client';
+import { calculateProductPrice } from '~/components/common-functions';
 
 interface OptionValue {
   entityId: number;
@@ -37,8 +39,23 @@ interface ProductVariant {
     salePrice: { value: number; currencyCode: string } | null;
   };
 }
+interface CategoryNode {
+  name: string;
+  path: string | null;
+  breadcrumbs?: {
+    edges: Array<{
+      node: {
+        entityId: any;
+        name: string;
+        path: string | null;
+      };
+    }> | null;
+  };
+}
+
 
 interface WishlistProduct {
+  categories: CategoryNode;
   entityId: number;
   name: string;
   sku: string;
@@ -61,7 +78,6 @@ interface WishlistProduct {
   productOptions?: ProductOption[];
   variants: ProductVariant[];
 }
-
 interface WishlistItem {
   entityId: number;
   productEntityId: number;
@@ -72,15 +88,21 @@ const ProductCard = ({
   item,
   wishlistEntityId,
   onDelete,
+  discountRules,
 }: {
   item: WishlistItem;
   wishlistEntityId: number;
   onDelete: (productId: number, wishlistItemId: number) => void;
+  discountRules: any;
 }) => {
   const { setDeletedProductId } = useCommonContext();
+  // console.log("items from product Card----",item);
+  // console.log("price updated data---",priceUpdatedData.updatedProduct);
 
   const format = useFormatter();
   const [isLoading, setIsLoading] = useState(false);
+  const [updatedWishlist, setUpdatedWishlist] = useState([]);
+  const [categoryId,setCategoryId] =  useState<string[]>([]);
   const [variantDetails, setVariantDetails] = useState<{
     mpn: string;
     calculated_price: number;
@@ -117,8 +139,35 @@ const ProductCard = ({
       } catch (error) {}
     };
 
+    const categories = removeEdgesAndNodes(item.product.categories) as CategoryNode[];
+    const categoryWithMostBreadcrumbs = categories.reduce((longest, current) => {
+      const longestLength = longest?.breadcrumbs?.edges?.length || 0;
+      const currentLength = current?.breadcrumbs?.edges?.length || 0;
+      return currentLength > longestLength ? current : longest;
+    }, categories[0]);
+    
+    const categoryIds = categoryWithMostBreadcrumbs?.breadcrumbs?.edges?.map(
+      (edge) => edge.node.entityId
+    ) || [];
+
+    setCategoryId(categoryIds);
+
     fetchVariantDetails();
   }, [item]);
+  
+  function handlePriceUpdatedProduct(product: any[]) {
+    setUpdatedWishlist(product);
+}
+
+calculateProductPrice(item.product, "wishlist", discountRules, categoryId)
+    .then(result => {
+        const priceUpdatedProduct = result;
+        //setUpdatedWishlist([...priceUpdatedProduct]);
+       handlePriceUpdatedProduct(priceUpdatedProduct); // Use it later in another function
+    })
+    .catch(error => {
+        console.error("Error calculating product price:", error);
+    });
 
   return (
     <div className="flex flex-col space-y-4">
@@ -174,7 +223,7 @@ const ProductCard = ({
               <span className="font-semibold">Sku: </span>
               <span>{variantDetails.mpn}</span>
             </p>
-
+            {updatedWishlist?.UpdatePriceForMSRP && (
             <p className="text-sm">
               <span className="font-semibold">Price: </span>
               <span>
@@ -184,6 +233,45 @@ const ProductCard = ({
                 })}
               </span>
             </p>
+            )}
+            {/* {updatedWishlist?.UpdatePriceForMSRP && (
+                      <ProductPrice
+                        defaultPrice={product.UpdatePriceForMSRP.originalPrice || 0}
+                        defaultSalePrice={
+                          product?.UpdatePriceForMSRP.hasDiscount
+                            ? product.UpdatePriceForMSRP.updatedPrice
+                            : product?.UpdatePriceForMSRP.warrantyApplied
+                              ? product.UpdatePriceForMSRP.updatedPrice
+                              : null
+                        }
+                        priceMaxRule={priceMaxRules?.find(
+                          (r: any) =>
+                            (r.bc_brand_ids &&
+                              (r.bc_brand_ids.includes(product?.brand?.entityId) ||
+                                r.bc_brand_ids.includes(String(product?.brand?.entityId)))) ||
+                            (r.skus && r.skus.includes(product?.parent?.sku)),
+                        )}
+                        currency={product.UpdatePriceForMSRP.currencyCode?.currencyCode || 'USD'}
+                        format={format}
+                        showMSRP={product.UpdatePriceForMSRP.showDecoration}
+                        warrantyApplied={product.UpdatePriceForMSRP.warrantyApplied}
+                        options={{
+                          useAsyncMode: false,
+                          useDefaultPrices: true,
+                        }}
+                        classNames={{
+                          root: 'product-price mt-2 flex items-center gap-[0.5em] text-center xl:text-left',
+                          newPrice:
+                            'text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-brand-400',
+                          oldPrice:
+                            'inline-flex items-baseline text-left text-[16px] font-medium leading-8 tracking-[0.15px] text-gray-600 line-through sm:mr-0',
+                          discount:
+                            'whitespace-nowrap text-left text-[16px] font-normal leading-8 tracking-[0.15px] text-brand-400',
+                          price: 'text-left text-[20px] font-medium leading-8 tracking-[0.15px] text-brand-400',
+                          msrp: '-ml-[0.5em] mb-1 text-[12px] text-gray-500',
+                        }}
+                      />
+                    )} */}
 
             {variantDetails.option_values.map((option, index) => (
               <p key={index} className="text-sm">
@@ -253,7 +341,7 @@ const ProductCard = ({
   );
 };
 
-export function WishlistProductCard(): JSX.Element {
+export function WishlistProductCard(customerGroupDetails: { discount_rules: any; }): JSX.Element{
   const [wishlistData, setWishlistData] = useState<{
     entityId: number;
     name: string;
@@ -263,6 +351,53 @@ export function WishlistProductCard(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+   const discountRules = customerGroupDetails?.customerGroupDetails?.discount_rules;
+  //console.log("discount Rules---",discountRules);
+  //console.log("wishlistData--?",wishlistData);
+
+//   const getCategoryIds =(category: any)=>{
+//     const categories = removeEdgesAndNodes(category) as CategoryNode[];
+//     const categoryWithMostBreadcrumbs = categories.reduce((longest, current) => {
+//       const longestLength = longest?.breadcrumbs?.edges?.length || 0;
+//       const currentLength = current?.breadcrumbs?.edges?.length || 0;
+//       return currentLength > longestLength ? current : longest;
+//     }, categories[0]);
+    
+//     return categoryWithMostBreadcrumbs?.breadcrumbs?.edges?.map(
+//       (edge) => edge.node.entityId
+//     ) || [];
+//   }
+   
+    
+//     let updatedWishlistItems = wishlistData?.items.map((item: any)=>{
+//        return{
+//         ...item,
+//         categoryIds: getCategoryIds(item.product.categories),
+//        }
+//     });
+//     //console.log("updated wishlist--",updatedWishlistItems);
+//     const updatedProduct: any[] = [];
+//     const fetchPrice = async () => {
+      
+    
+//       for (const item of updatedWishlistItems) {
+//         const priceUpdatedProduct = await calculateProductPrice(item.product, "wishlist", discountRules, item.categoryIds);
+//         const updatedItem = {...item,product:priceUpdatedProduct};
+//         updatedProduct.push(updatedItem);
+//       }
+//       return updatedProduct;
+//     }
+    
+//     fetchPrice().then((prices) => {
+//       console.log("fetch is working---", prices); // prices will be the resolved array of prices
+//     });
+//  // console.log("price updates",updatedProduct);
+//   const priceUpdatedData = {
+//     ...updatedWishlistItems,
+//     updatedProduct:updatedProduct,
+
+//   }
+  
   const handleDelete = (productId: number, wishlistItemId: number) => {
     if (!wishlistData) return;
 
@@ -313,6 +448,8 @@ export function WishlistProductCard(): JSX.Element {
   if (!wishlistData) {
     return <div></div>;
   }
+  // console.log("wishlist--",wishlistData);
+  // console.log("updated ---",updatedProduct);
 
   return (
     <div className="container m-auto mx-auto mb-12 w-[80%] px-4">
@@ -354,6 +491,7 @@ export function WishlistProductCard(): JSX.Element {
             item={item}
             wishlistEntityId={wishlistData.entityId}
             onDelete={handleDelete}
+            discountRules={discountRules}
           />
         ))}
       </div>
