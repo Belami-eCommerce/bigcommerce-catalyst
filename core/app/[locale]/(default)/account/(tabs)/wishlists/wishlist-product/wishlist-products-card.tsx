@@ -9,9 +9,15 @@ import { Breadcrumbs as ComponentsBreadcrumbs } from '~/components/ui/breadcrumb
 import { addToCart } from '~/components/product-card/add-to-cart/form/_actions/add-to-cart';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
-import { GetProductMetaFields, GetVariantsByProductId } from '~/components/management-apis';
+import {
+  CheckProductFreeShipping,
+  GetProductMetaFields,
+  GetVariantsByProductId,
+} from '~/components/management-apis';
 import { useCommonContext } from '~/components/common-context/common-provider';
 import { ReviewSummary } from '~/app/[locale]/(default)/product/[slug]/_components/review-summary';
+import { Promotion } from '~/belami/components/search/hit';
+import { getActivePromotions } from '~/belami/lib/fetch-promotions';
 
 interface OptionValue {
   entityId: number;
@@ -51,6 +57,7 @@ interface WishlistProduct {
     averageRating: string;
   };
   brand?: {
+    entityId: Number;
     name: string;
     path: string;
   };
@@ -87,9 +94,12 @@ const ProductCard = ({
   onDelete: (productId: number, wishlistItemId: number) => void;
 }) => {
   const { setDeletedProductId } = useCommonContext();
-
   const format = useFormatter();
   const [isLoading, setIsLoading] = useState(false);
+  const [promotionsData, setPromotionsData] = useState<any>(null); // Add this
+  const [isFreeShipping, setIsFreeShipping] = useState(false); // Add this
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
+
   const [variantDetails, setVariantDetails] = useState<{
     mpn: string;
     calculated_price: number;
@@ -126,6 +136,28 @@ const ProductCard = ({
       } catch (error) {}
     };
 
+    const fetchData = async () => {
+      try {
+        // Fetch promotions and shipping data
+        const promotions = await getActivePromotions(true);
+        const freeShipping = await CheckProductFreeShipping(item.productEntityId.toString());
+        const cats = item.product?.categories?.edges?.map((edge) => edge.node.entityId) || [];
+
+        console.log('Fetched Data:', {
+          promotions,
+          freeShipping,
+          categoryIds: cats,
+          brandId: item.product.brand?.entityId,
+        });
+
+        setPromotionsData(promotions);
+        setIsFreeShipping(freeShipping);
+        setCategoryIds(cats);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
     fetchVariantDetails();
   }, [item]);
 
@@ -176,6 +208,18 @@ const ProductCard = ({
             {item.product.name}
           </h3>
         </Link>
+
+        {promotionsData && (
+          <div className="mt-0">
+            <Promotion
+              promotions={promotionsData}
+              product_id={item.productEntityId}
+              brand_id={Number(item.product.brand?.entityId)}
+              category_ids={categoryIds}
+              free_shipping={isFreeShipping}
+            />
+          </div>
+        )}
 
         <div className="mt-2 flex justify-center">
           <ReviewSummary
@@ -295,7 +339,6 @@ export function WishlistProductCard(): JSX.Element {
             parsedWishlist.items.map(async (item: WishlistItem) => {
               try {
                 const productMetaFields = await GetProductMetaFields(item.productEntityId, '');
-
                 const averageRatingMetaField = productMetaFields?.find(
                   (field: MetaField) => field?.key === 'sv-average-rating',
                 );

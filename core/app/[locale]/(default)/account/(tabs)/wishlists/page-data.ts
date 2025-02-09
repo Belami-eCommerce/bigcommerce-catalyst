@@ -156,6 +156,7 @@ const WishlistsQuery = graphql(
                       entityId
                       brand {
                         entityId
+                        id
                         name
                         path
                       }

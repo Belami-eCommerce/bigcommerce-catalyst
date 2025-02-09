@@ -401,7 +401,7 @@ export const CartItem = async ({
                   category_ids={categoryIds}
                   free_shipping={isFreeShipping}
                 /> */}
-                
+
                 {changeTheProtectedPosition?.length > 0 && (
                   <div className="modifier-options flex min-w-full max-w-[600px] flex-wrap gap-2">
                     <div className="cart-options">
