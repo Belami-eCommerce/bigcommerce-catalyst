@@ -50,7 +50,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
             <BcImage
               src={currentImage.src}
               alt={currentImage.alt}
-              className="h-full w-full object-fill"
+              className="h-full w-full object-cover"
               width={1200}
               height={400}
               unoptimized={true}

@@ -72,7 +72,6 @@ interface Props {
   getAllCommonSettinngsValues: any;
   isFromQuickView: boolean;
   customerGroupDetails: any;
-  swatchOptions?:any;
 }
 
 export const DetailsFragment = graphql(
@@ -169,8 +168,7 @@ export const Details = ({
   triggerLabel5,
   children5,
   priceMaxRules,
-  isFromQuickView,
- swatchOptions
+  isFromQuickView
 }: Props) => {
   const t = useTranslations('Product.Details');
   const format = useFormatter();
@@ -549,8 +547,6 @@ export const Details = ({
           category_ids={categoryIds}
           free_shipping={isFreeShipping}
         />
-
-        
         <div className="free-shipping-detail mb-[25px] mt-[10px] text-center xl:text-left">
           {selectedVariantId && (
             <DeliveryMessage
@@ -571,7 +567,6 @@ export const Details = ({
         <div ref={productFormRef}>
           <ProductForm
             data={product}
-            swatchOptions={swatchOptions}
             productMpn={product.mpn || ''}
             multipleOptionIcon={multipleOptionIcon}
             blankAddImg={blankAddImg || ''}

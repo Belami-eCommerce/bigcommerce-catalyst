@@ -39,7 +39,6 @@ import { Label } from '~/components/ui/form';
 import exclamatryIcon from '~/public/pdp-icons/exclamatryIcon.svg';
 import SkyxFlyout from '~/components/skyx-flyout/skyxFlyout';
 
-
 aa('init', {
   appId: process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || '',
   apiKey: process.env.NEXT_PUBLIC_ALGOLIA_API_KEY || '',
@@ -56,7 +55,6 @@ interface Props {
   productMpn: string | null;
   showInSticky?: boolean;
   customerGroupDetails?: any;
-  swatchOptions:any;
 }
 
 const productItemTransform = (p: FragmentOf<typeof ProductItemFragment>) => {
@@ -106,7 +104,6 @@ export const ProductForm = ({
   productMpn,
   customerGroupDetails,
   showInSticky = false,
-  swatchOptions
 }: Props) => {
   
   const t = useTranslations('Product.Form');
@@ -114,7 +111,7 @@ export const ProductForm = ({
   const productFlyout: any = useCommonContext();
   const productOptions = removeEdgesAndNodes(product.productOptions);
   const { cartIdForCheck, setCartIdForCheck } = useCompareDrawerContext();
-  const pId =product?.entityId
+
   if (productOptions?.length > 0) {
     const router = useRouter();
     const pathname = usePathname();
@@ -384,8 +381,6 @@ export const ProductForm = ({
                   option={option}
                   multipleOptionIcon={multipleOptionIcon}
                   productMpn={productMpn}
-                  pId={pId}
-                  swatchOptions={swatchOptions}
                 />
               );
             }
