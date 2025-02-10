@@ -311,6 +311,8 @@ const ProductCard = ({
                 </p>
               );
             })}
+             </div>
+           )}
              {/* Only render promotion section if there are active promotions */}
         {hasActivePromotion && (
           <div className="text-center">
@@ -323,6 +325,7 @@ const ProductCard = ({
             />
           </div>
         )}
+      </div>
       </div>
 
       <form
