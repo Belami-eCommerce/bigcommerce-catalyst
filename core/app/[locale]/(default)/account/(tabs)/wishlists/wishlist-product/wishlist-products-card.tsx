@@ -84,6 +84,7 @@ interface WishlistItem {
   variantEntityId: number;
   product: WishlistProduct;
 }
+
 const ProductCard = ({
   item,
   wishlistEntityId,
@@ -96,9 +97,10 @@ const ProductCard = ({
   const { setDeletedProductId } = useCommonContext();
   const format = useFormatter();
   const [isLoading, setIsLoading] = useState(false);
-  const [promotionsData, setPromotionsData] = useState<any>(null); // Add this
-  const [isFreeShipping, setIsFreeShipping] = useState(false); // Add this
+  const [promotionsData, setPromotionsData] = useState<any>(null);
+  const [isFreeShipping, setIsFreeShipping] = useState(false);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
+  const [hasActivePromotion, setHasActivePromotion] = useState(false);
 
   const [variantDetails, setVariantDetails] = useState<{
     mpn: string;
@@ -111,10 +113,7 @@ const ProductCard = ({
 
   const handleDeleteWishlist = () => {
     const productId = item.productEntityId;
-
-    // Call setDeletedProductId with both IDs
     setDeletedProductId(productId, wishlistEntityId);
-
     onDelete(productId, item.entityId);
   };
 
@@ -138,79 +137,117 @@ const ProductCard = ({
 
     const fetchData = async () => {
       try {
-        // Fetch promotions and shipping data
         const promotions = await getActivePromotions(true);
         const freeShipping = await CheckProductFreeShipping(item.productEntityId.toString());
         const cats = item.product?.categories?.edges?.map((edge) => edge.node.entityId) || [];
 
-        console.log('Fetched Data:', {
-          promotions,
-          freeShipping,
-          categoryIds: cats,
-          brandId: item.product.brand?.entityId,
-        });
+        // Check if there are any active promotions
+        const hasPromo = promotions && (Object.keys(promotions).length > 0 || freeShipping);
 
         setPromotionsData(promotions);
         setIsFreeShipping(freeShipping);
         setCategoryIds(cats);
+        setHasActivePromotion(hasPromo);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setHasActivePromotion(false);
       }
     };
+
     fetchData();
     fetchVariantDetails();
   }, [item]);
 
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="relative flex h-full flex-col rounded border border-gray-300 p-[1em]">
-        <div className="relative aspect-square overflow-hidden">
-          <Link href={item.product.path}>
-            <img
-              src={item.product.defaultImage.url.replace('{:size}', '500x500')}
-              alt={item.product.defaultImage.altText || item.product.name}
-              className="h-full w-full object-cover"
-            />
-          </Link>
-        </div>
-
-        <div className="flex justify-end">
-          <div
-            className="wishlist-product-delete-icon flex w-fit cursor-pointer justify-end rounded-full bg-[#E7F5F8]"
-            onClick={handleDeleteWishlist}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="35"
-              height="35"
-              viewBox="0 0 21 19"
-              fill="none"
-              className="p-[7px]"
-            >
-              <path
-                d="M10.3257 18.35L8.87568 17.03C3.72568 12.36 0.325684 9.27 0.325684 5.5C0.325684 2.41 2.74568 0 5.82568 0C7.56568 0 9.23568 0.81 10.3257 2.08C11.4157 0.81 13.0857 0 14.8257 0C17.9057 0 20.3257 2.41 20.3257 5.5C20.3257 9.27 16.9257 12.36 11.7757 17.03L10.3257 18.35Z"
-                fill="#008BB7"
+    <div className="flex h-full flex-col">
+      <div className="relative mb-4 flex h-full flex-col border border-gray-300 pb-0">
+        <div className="product-card-details p-[1em] pb-[0]">
+          <div className="relative aspect-square overflow-hidden">
+            <Link href={item.product.path}>
+              <img
+                src={item.product.defaultImage.url.replace('{:size}', '500x500')}
+                alt={item.product.defaultImage.altText || item.product.name}
+                className="h-full w-full object-cover"
               />
-            </svg>
+            </Link>
           </div>
-        </div>
 
-        <div className="flex justify-center">
-          {item.product.brand && (
-            <p className="mb-2 flex justify-center text-sm text-gray-600">
-              {item.product.brand.name}
-            </p>
+          <div className="flex justify-end">
+            <div
+              className="wishlist-product-delete-icon flex w-fit cursor-pointer justify-end rounded-full bg-[#E7F5F8]"
+              onClick={handleDeleteWishlist}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="35"
+                height="35"
+                viewBox="0 0 21 19"
+                fill="none"
+                className="p-[7px]"
+              >
+                <path
+                  d="M10.3257 18.35L8.87568 17.03C3.72568 12.36 0.325684 9.27 0.325684 5.5C0.325684 2.41 2.74568 0 5.82568 0C7.56568 0 9.23568 0.81 10.3257 2.08C11.4157 0.81 13.0857 0 14.8257 0C17.9057 0 20.3257 2.41 20.3257 5.5C20.3257 9.27 16.9257 12.36 11.7757 17.03L10.3257 18.35Z"
+                  fill="#008BB7"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            {item.product.brand && (
+              <p className="mb-2 flex justify-center text-sm text-gray-600">
+                {item.product.brand.name}
+              </p>
+            )}
+          </div>
+
+          <Link href={item.product.path}>
+            <h3 className="text-center font-medium text-black hover:text-gray-700">
+              {item.product.name}
+            </h3>
+          </Link>
+
+          <div className="flex justify-center">
+            <ReviewSummary
+              data={{
+                reviewSummary: {
+                  numberOfReviews: item.product.reviewSummary?.numberOfReviews || '0',
+                  averageRating: item.product.reviewSummary?.averageRating || '0',
+                },
+              }}
+            />
+          </div>
+
+          {variantDetails && (
+            <div className="mt-2 space-y-2 text-center">
+              <p className="text-sm">
+                <span className="font-semibold">Sku: </span>
+                <span>{variantDetails.mpn}</span>
+              </p>
+
+              <p className="text-sm">
+                <span className="font-semibold">Price: </span>
+                <span>
+                  {format.number(variantDetails.calculated_price, {
+                    style: 'currency',
+                    currency: 'USD',
+                  })}
+                </span>
+              </p>
+
+              {variantDetails.option_values.map((option, index) => (
+                <p key={index} className="text-sm">
+                  <span className="font-semibold">{option.option_display_name}: </span>
+                  <span>{option.label}</span>
+                </p>
+              ))}
+            </div>
           )}
         </div>
 
-        <Link href={item.product.path}>
-          <h3 className="text-center font-medium text-black hover:text-gray-700">
-            {item.product.name}
-          </h3>
-        </Link>
-
-        {promotionsData && (
-          <div className="mt-0">
+        {/* Only render promotion section if there are active promotions */}
+        {hasActivePromotion && (
+          <div className="text-center">
             <Promotion
               promotions={promotionsData}
               product_id={item.productEntityId}
@@ -218,43 +255,6 @@ const ProductCard = ({
               category_ids={categoryIds}
               free_shipping={isFreeShipping}
             />
-          </div>
-        )}
-
-        <div className="mt-2 flex justify-center">
-          <ReviewSummary
-            data={{
-              reviewSummary: {
-                numberOfReviews: item.product.reviewSummary?.numberOfReviews || '0',
-                averageRating: item.product.reviewSummary?.averageRating || '0',
-              },
-            }}
-          />
-        </div>
-
-        {variantDetails && (
-          <div className="mt-2 space-y-2 text-center">
-            <p className="text-sm">
-              <span className="font-semibold">Sku: </span>
-              <span>{variantDetails.mpn}</span>
-            </p>
-
-            <p className="text-sm">
-              <span className="font-semibold">Price: </span>
-              <span>
-                {format.number(variantDetails.calculated_price, {
-                  style: 'currency',
-                  currency: 'USD',
-                })}
-              </span>
-            </p>
-
-            {variantDetails.option_values.map((option, index) => (
-              <p key={index} className="text-sm">
-                <span className="font-semibold">{option.option_display_name}: </span>
-                <span>{option.label}</span>
-              </p>
-            ))}
           </div>
         )}
       </div>
@@ -370,7 +370,7 @@ export function WishlistProductCard(): JSX.Element {
             })
             .catch((error) => {
               console.error('Error processing items:', error);
-              setWishlistData(parsedWishlist); // Fallback to original data
+              setWishlistData(parsedWishlist);
             });
         } else {
           router.push('/account/wishlists');

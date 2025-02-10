@@ -541,6 +541,8 @@ export const Details = ({
           category_ids={categoryIds}
           free_shipping={isFreeShipping}
         />
+
+        
         <div className="free-shipping-detail mb-[25px] mt-[10px] text-center xl:text-left">
           {selectedVariantId && (
             <FreeDelivery
