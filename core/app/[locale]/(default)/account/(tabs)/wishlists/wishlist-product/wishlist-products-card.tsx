@@ -151,7 +151,7 @@ const ProductCard = ({
 
   function handlePriceUpdatedProduct(product: any[]) {
     if (Array.isArray(product) && JSON.stringify(updatedWishlist) !== JSON.stringify(product)) {
-      setUpdatedWishlist(prevWishlist => {
+      setUpdatedWishlist((prevWishlist) => {
         if (JSON.stringify(prevWishlist) !== JSON.stringify(product)) {
           return product;
         }
@@ -162,18 +162,12 @@ const ProductCard = ({
   calculateProductPrice(item.product, 'wishlist', discountRules, categoryId)
     .then((result) => {
       const priceUpdatedProduct = result;
-      handlePriceUpdatedProduct(priceUpdatedProduct); 
+      handlePriceUpdatedProduct(priceUpdatedProduct);
     })
     .catch((error) => {
       console.error('Error calculating product price:', error);
     });
-
-    console.log("original-->>",updatedWishlist[0]?.UpdatePriceForMSRP.originalPrice);
-    console.log("updated price--->",updatedWishlist[0]?.UpdatePriceForMSRP.updatedPrice);
-    console.log("discount -->",discountRules);
-    console.log("product to func",item.product);
     
-
   return (
     <div className="flex flex-col space-y-4">
       <div className="relative flex h-full flex-col rounded border border-gray-300 p-[1em]">
@@ -260,12 +254,18 @@ const ProductCard = ({
                 }}
               />
             )}
-            {variantDetails.option_values.map((option, index) => (
-              <p key={index} className="text-sm">
-                <span className="font-semibold">{option.option_display_name}: </span>
-                <span>{option.label}</span>
-              </p>
-            ))}
+            {variantDetails.option_values.map((option, index) => {
+              const updatedValue =
+                option.option_display_name === 'Select Fabric Color'
+                  ? option.label.split('|')[0]
+                  : option.label;
+              return (
+                <p key={index} className="text-sm">
+                  <span className="font-semibold">{option.option_display_name}: </span>
+                  <span>{updatedValue}</span>
+                </p>
+              );
+            })}
           </div>
         )}
       </div>
@@ -339,7 +339,7 @@ export function WishlistProductCard(customerGroupDetails: { discount_rules: any 
   const router = useRouter();
 
   const discountRules = customerGroupDetails?.customerGroupDetails?.discount_rules;
- 
+
   const handleDelete = (productId: number, wishlistItemId: number) => {
     if (!wishlistData) return;
 

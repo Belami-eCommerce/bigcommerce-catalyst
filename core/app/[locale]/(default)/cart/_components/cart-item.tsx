@@ -407,11 +407,11 @@ export const CartItem = async ({
                     <div className="cart-options">
                       <p className="inline text-left text-[0.875rem] font-bold uppercase leading-[1.5rem] tracking-[0.015625rem] text-[#5C5C5C]">
                         SKU: {product.sku}
-                        {changeTheProtectedPosition.length > 0 && (
+                        {/* {changeTheProtectedPosition.length > 0 && (
                           <span className="text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#5C5C5C]">
                             |
                           </span>
-                        )}
+                        )} */}
                       </p>
                       {changeTheProtectedPosition?.map((selectedOption: any, index: number) => {
                         let pipeLineData = '';
@@ -427,17 +427,17 @@ export const CartItem = async ({
                             return (
                               <div key={selectedOption.entityId} className="inline">
                                 <span className="text-left text-[0.875rem] font-bold leading-[1.5rem] tracking-[0.015625rem] text-[#5C5C5C]">
-                                  {selectedOption?.name}:
+                                  | {selectedOption?.name}:
                                 </span>
                                 <span className="ml-1.5 mr-1.5 text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#7F7F7F]">
                                   {displayValue}
                                 </span>
 
-                                {pipeLineData && (
+                                {/* {pipeLineData && (
                                   <span className="text-left text-[0.875rem] font-normal leading-[1.5rem] tracking-[0.015625rem] text-[#5C5C5C]">
                                     {pipeLineData}
                                   </span>
-                                )}
+                                )} */}
                               </div>
                             );
                           case 'CartSelectedCheckboxOption':

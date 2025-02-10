@@ -3,7 +3,7 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { BcImage } from '~/components/bc-image';
 
-export default function PrintOrderSummary({ data, innerRef }: { data: any, innerRef: any }) {
+export default function PrintOrderSummary({ data, innerRef }: { data: any; innerRef: any }) {
   const t = useTranslations('Account.Orders');
   const format = useFormatter();
   if (!data?.orderState) {
@@ -31,7 +31,7 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
   });
 
   return (
-    <div className="flex justify-center pagebreak print-page-container" ref={innerRef}>
+    <div className="pagebreak print-page-container flex justify-center" ref={innerRef}>
       <div className="flex w-[90%] flex-col gap-[30px]">
         <div className="flex flex-col gap-[30px]">
           <div className="border-b border-b-[#E8E7E7]">
@@ -46,7 +46,8 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                   Confirmation Number: <span className="font-[700]">{orderState?.orderId}</span>
                 </div>
                 <div>
-                  Order Date: <span className="font-[700]">
+                  Order Date:{' '}
+                  <span className="font-[700]">
                     {format.dateTime(new Date(orderState?.orderDate?.utc), {
                       year: 'numeric',
                       month: 'numeric',
@@ -69,10 +70,15 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                     {t('shippingAddress')}
                   </div>
                   <div>
-                    <div>{shippingAddressData?.firstName} {shippingAddressData?.lastName}</div>
+                    <div>
+                      {shippingAddressData?.firstName} {shippingAddressData?.lastName}
+                    </div>
                     <div>{shippingAddressData?.address1}</div>
                     <div>{shippingAddressData?.city}</div>
-                    <div>{shippingAddressData?.stateOrProvince}, {shippingAddressData?.countryCode} {shippingAddressData?.postalCode}</div>
+                    <div>
+                      {shippingAddressData?.stateOrProvince}, {shippingAddressData?.countryCode}{' '}
+                      {shippingAddressData?.postalCode}
+                    </div>
                   </div>
                 </div>
                 <div className="text-[14px] font-normal leading-[24px] tracking-[0.25px] text-black">
@@ -80,10 +86,17 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                     {t('billingAddress')}
                   </div>
                   <div>
-                    <div>{paymentInfo?.billingAddress?.firstName} {paymentInfo?.billingAddress?.lastName}</div>
+                    <div>
+                      {paymentInfo?.billingAddress?.firstName}{' '}
+                      {paymentInfo?.billingAddress?.lastName}
+                    </div>
                     <div>{paymentInfo?.billingAddress?.address1}</div>
                     <div>{paymentInfo?.billingAddress?.city}</div>
-                    <div>{paymentInfo?.billingAddress?.stateOrProvince}, {paymentInfo?.billingAddress?.countryCode} {paymentInfo?.billingAddress?.postalCode}</div>
+                    <div>
+                      {paymentInfo?.billingAddress?.stateOrProvince},{' '}
+                      {paymentInfo?.billingAddress?.countryCode}{' '}
+                      {paymentInfo?.billingAddress?.postalCode}
+                    </div>
                   </div>
                 </div>
                 {/*<div className="text-[14px] font-normal leading-[24px] tracking-[0.25px] text-black">
@@ -94,9 +107,10 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                 </div>*/}
               </div>
             </div>
-            <div className="flex w-1/2 ml-[60px] flex-col gap-[3px] text-[16px] font-normal leading-[32px] tracking-[0.5px]">
+            <div className="ml-[60px] flex w-1/2 flex-col gap-[3px] text-[16px] font-normal leading-[32px] tracking-[0.5px]">
               <div className="text-[20px] font-medium leading-[32px] tracking-[0.15px] text-[#002A37]">
-                {t('orderTotal')}: {format.number(grandTotal.value, {
+                {t('orderTotal')}:{' '}
+                {format.number(grandTotal.value, {
                   style: 'currency',
                   currency: grandTotal.currencyCode,
                 })}
@@ -108,12 +122,14 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                     {format.number(subtotal.value, {
                       style: 'currency',
                       currency: subtotal.currencyCode,
-                    })}</div>
+                    })}
+                  </div>
                 </div>
                 {nonCouponDiscountTotal.value > 0 && (
                   <div className="flex justify-between border-b border-b-[#E8E7E7]">
                     <div>Discounts</div>
-                    <div className="text-[#008BB7]">-
+                    <div className="text-[#008BB7]">
+                      -
                       {format.number(nonCouponDiscountTotal.value, {
                         style: 'currency',
                         currency: nonCouponDiscountTotal.currencyCode,
@@ -124,11 +140,12 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                 {couponDiscounts.map(({ couponCode, discountedAmount }, index) => (
                   <div className="flex justify-between border-b border-b-[#E8E7E7]" key={index}>
                     <div>{t('orderAppliedCoupon', { code: couponCode })}</div>
-                    <div>- {format.number(discountedAmount.value, {
-                      style: 'currency',
-                      currency: discountedAmount.currencyCode,
-                    })}
-
+                    <div>
+                      -{' '}
+                      {format.number(discountedAmount.value, {
+                        style: 'currency',
+                        currency: discountedAmount.currencyCode,
+                      })}
                     </div>
                   </div>
                 ))}
@@ -154,10 +171,13 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                 </div>
                 <div className="flex justify-between border-b border-b-[#E8E7E7]">
                   <div>{t('orderShipping')}</div>
-                  <div>{shipping.value > 0 ? format.number(shipping.value, {
-                    style: 'currency',
-                    currency: shipping.currencyCode,
-                  }) : 'FREE'}
+                  <div>
+                    {shipping.value > 0
+                      ? format.number(shipping.value, {
+                          style: 'currency',
+                          currency: shipping.currencyCode,
+                        })
+                      : 'FREE'}
                   </div>
                 </div>
                 {handlingCost.value > 0 && (
@@ -194,7 +214,9 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
           </div>
         </div>
         <div className="flex flex-col gap-[30px]">
-          <div className="font-[500] text-[20px] leading-[32px] tracking-[0.15px] text-black">Items In This Order ({noOfItems})</div>
+          <div className="text-[20px] font-[500] leading-[32px] tracking-[0.15px] text-black">
+            Items In This Order ({noOfItems})
+          </div>
           <div className="flex flex-col gap-[30px]">
             <div className="flex flex-col gap-[30px]">
               {shippingConsignments?.map((consignment, idx) => {
@@ -204,9 +226,12 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                     {lineItems.map((shipment) => {
                       const isImageAvailable = shipment?.defaultImage !== null;
                       return (
-                        <div className="border border-[#cccbcb] p-[20px] [@media_print]:break-inside-avoid [@media_print]:[page-break-inside:avoid] " key={shipment?.entityId}>
-                          <div className="flex gap-[20px] justify-between items-center">
-                            <div className="flex gap-[20px] items-center flex-1">
+                        <div
+                          className="border border-[#cccbcb] p-[20px] [@media_print]:break-inside-avoid [@media_print]:[page-break-inside:avoid]"
+                          key={shipment?.entityId}
+                        >
+                          <div className="flex items-center justify-between gap-[20px]">
+                            <div className="flex flex-1 items-center gap-[20px]">
                               <div className="bg-[#d9d9d9]">
                                 {isImageAvailable && (
                                   <BcImage
@@ -221,39 +246,52 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                                 {!isImageAvailable && (
                                   <div className="h-[150px] w-[150px]">
                                     <div className="flex h-full w-full items-center justify-center bg-gray-200 text-gray-500">
-                                      <span className="text-center text-sm md:text-base">{t('comingSoon')}</span>
+                                      <span className="text-center text-sm md:text-base">
+                                        {t('comingSoon')}
+                                      </span>
                                     </div>
                                   </div>
                                 )}
                               </div>
-                              <div className="flex-shrink-[50] flex flex-col gap-[3px]">
-                                <div className="font-normal text-[16px] leading-[32px] tracking-[0.15px] text-black">
+                              <div className="flex flex-shrink-[50] flex-col gap-[3px]">
+                                <div className="text-[16px] font-normal leading-[32px] tracking-[0.15px] text-black">
                                   {shipment?.name}
                                 </div>
-                                <div className="font-bold text-[14px] leading-[24px] tracking-[0.25px] text-[#7f7f7f]">
+                                <div className="text-[14px] font-bold leading-[24px] tracking-[0.25px] text-[#7f7f7f]">
                                   <span>SKU: ABC-1234DE</span>{' '}
-                                  {shipment?.productOptions?.map(({ name: optionName, value }, idx) => {
-                                    return (
-                                      <>
-                                        <span className="text-[14px] font-bold leading-[24px] tracking-[0.25px] text-[#7F7F7F]" key={idx}>
-                                          {optionName}
-                                        </span>
-                                        <span className="text-[14px] font-[400] leading-[24px] tracking-[0.25px] text-[#7F7F7F]">
-                                          {' '}
-                                          {value}
-                                        </span>
-                                      </>
-                                    );
-                                  })}
+                                  {shipment?.productOptions?.map(
+                                    ({ name: optionName, value }, idx) => {
+                                      const updatedValue =
+                                        optionName === 'Select Fabric Color'
+                                          ? value.split('|')[0]
+                                          : value;
+                                      return (
+                                        <>
+                                          <span
+                                            className="text-[14px] font-bold leading-[24px] tracking-[0.25px] text-[#7F7F7F]"
+                                            key={idx}
+                                          >
+                                            | {optionName}
+                                          </span>
+                                          <span className="text-[14px] font-[400] leading-[24px] tracking-[0.25px] text-[#7F7F7F]">
+                                            {' '}
+                                            {updatedValue}
+                                          </span>
+                                        </>
+                                      );
+                                    },
+                                  )}
                                 </div>
-                                <div className="font-normal text-[14px] leading-[24px] tracking-[0.25px]">QTY: {shipment?.quantity}</div>
+                                <div className="text-[14px] font-normal leading-[24px] tracking-[0.25px]">
+                                  QTY: {shipment?.quantity}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex-1 text-right flex flex-col gap-[3px]">
+                            <div className="flex flex-1 flex-col gap-[3px] text-right">
                               {/*<div className="font-normal text-[14px] leading-[24px] tracking-[0.25px] text-[#1DB14B]">
                                 10% Coupon: <span>$81.17</span>
                               </div>*/}
-                              <div className="font-normal text-[14px] leading-[24px] tracking-[0.25px]">
+                              <div className="text-[14px] font-normal leading-[24px] tracking-[0.25px]">
                                 {format.number(shipment?.subTotalListPrice.value, {
                                   style: 'currency',
                                   currency: shipment?.subTotalListPrice.currencyCode,
@@ -269,7 +307,7 @@ export default function PrintOrderSummary({ data, innerRef }: { data: any, inner
                       );
                     })}
                   </>
-                )
+                );
               })}
             </div>
           </div>
