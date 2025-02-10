@@ -20,11 +20,5 @@ interface CustomerGroup {
   }
 
 export default async function WishlistPage() {
-
-  const data = await getWishlists({
-    limit: 50,
-  });
-  console.log("Data==",data);
-
   return <WishlistProductCard customerGroupDetails={customerGroupDetails}/>;
 }

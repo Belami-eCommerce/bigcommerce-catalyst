@@ -172,7 +172,9 @@ export const ProductFlyout = ({
         );
         let productData = await getVariantProductInfo(metaData, discountRules);
         setVariantProductData([...productData]);
-        var getAllCommonSettinngsValues =await commonSettinngs([product?.baseCatalogProduct?.brand?.entityId]);
+        var getAllCommonSettinngsValues = await commonSettinngs([
+          product?.baseCatalogProduct?.brand?.entityId,
+        ]);
         setCommonSettingsValues(getAllCommonSettinngsValues);
       };
 
@@ -253,20 +255,23 @@ export const ProductFlyout = ({
                       if (index < productData?.selectedOptions?.length - 2) {
                         pipeLineData = ',';
                       }
+                      let displayValue = selectedOption.value;
+                      if (selectedOption.name === 'Select Fabric Color') {
+                        displayValue = selectedOption.value.split('|')[0];
+                      }
                       return (
                         <div
                           key={selectedOption.entityId}
-                          className="text-center inline ssm:text-start"
+                          className="inline text-center ssm:text-start"
                         >
                           <span className="popup-box1-div2-sku text-[12px] font-normal leading-[1.5rem] tracking-[0.4px] text-[#5C5C5C] ssm:tracking-[0.015625rem]">
                             {selectedOption.name}:
                           </span>
                           <span className="popup-box1-div2-sku text-[12px] font-normal leading-[1.5rem] tracking-[0.4px] text-[#5C5C5C] ssm:tracking-[0.015625rem]">
-                            {selectedOption.value}
+                            {displayValue}
                           </span>
                           {pipeLineData && (
                             <span className="popup-box1-div2-sku text-[12px] font-normal leading-[1.5rem] tracking-[0.4px] text-[#5C5C5C] ssm:tracking-[0.015625rem]">
-                              {' '}
                               {pipeLineData}
                             </span>
                           )}
@@ -305,42 +310,43 @@ export const ProductFlyout = ({
                   </div>
                 </Dialog.Content>
               )}
-              
-              {variantProductData && variantProductData?.length > 0 
-               && commonSettingsValues?.[product?.baseCatalogProduct?.brand?.entityId]?.use_accessories  
-              && (
-                <>
-                  <hr className="my-[20px] border-[#93cfa1]" />
-                  <div className="pop-up-text flex flex-col gap-4">
-                    <div className="flex flex-col gap-[20px]">
-                      <div className="text-[20px] font-medium tracking-[0.15px] text-black">
-                        You May Also Need
-                      </div>
-                      <div className="accessories-data flex flex-col gap-[20px]">
-                        {variantProductData &&
-                          variantProductData?.map((accessories: any, index: number) => (
-                            <div
-                              className="product-card flex flex-col items-center gap-[20px] border border-[#cccbcb] p-[20px] sm:flex-row xl:flex-col 4xl:flex-row"
-                              key={index}
-                            >
-                              <ProductAccessories
-                                isLoading={isLoading}
-                                setIsLoading={setIsLoading}
-                                accessories={accessories}
-                                fanPopup={fanPopup}
-                                blankAddImg={blankAddImg}
-                                index={index}
-                                from={from}
-                                currencyCode={currencyCode}
-                                data={product}
-                              />
-                            </div>
-                          ))}
+
+              {variantProductData &&
+                variantProductData?.length > 0 &&
+                commonSettingsValues?.[product?.baseCatalogProduct?.brand?.entityId]
+                  ?.use_accessories && (
+                  <>
+                    <hr className="my-[20px] border-[#93cfa1]" />
+                    <div className="pop-up-text flex flex-col gap-4">
+                      <div className="flex flex-col gap-[20px]">
+                        <div className="text-[20px] font-medium tracking-[0.15px] text-black">
+                          You May Also Need
+                        </div>
+                        <div className="accessories-data flex flex-col gap-[20px]">
+                          {variantProductData &&
+                            variantProductData?.map((accessories: any, index: number) => (
+                              <div
+                                className="product-card flex flex-col items-center gap-[20px] border border-[#cccbcb] p-[20px] sm:flex-row xl:flex-col 4xl:flex-row"
+                                key={index}
+                              >
+                                <ProductAccessories
+                                  isLoading={isLoading}
+                                  setIsLoading={setIsLoading}
+                                  accessories={accessories}
+                                  fanPopup={fanPopup}
+                                  blankAddImg={blankAddImg}
+                                  index={index}
+                                  from={from}
+                                  currencyCode={currencyCode}
+                                  data={product}
+                                />
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
               {from == 'pdp' && cartItemsData && (
                 <>
                   <hr className="" />
