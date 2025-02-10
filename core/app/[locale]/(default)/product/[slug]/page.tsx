@@ -37,7 +37,6 @@ import { calculateProductPrice } from '~/components/common-functions';
 import { ProductSchema } from './_components/product-schema';
 import { useTranslations } from 'next-intl';
 import { getActivePromotions } from '~/belami/lib/fetch-promotions';
-import { getMultipleChoiceOptions, } from '~/components/graphql-apis';
 
 interface Props {
   params: Promise<{ slug: string; locale: string }>;
@@ -178,8 +177,7 @@ export default async function ProductPage(props: Props) {
         useDefaultOptionSelections: optionValueIds.length === 0 ? true : undefined,
       });
     }
-    let swatchOpt: any;
-    swatchOpt = await getMultipleChoiceOptions(productId);
+
     if (!product) {
       return notFound();
     }
@@ -353,7 +351,6 @@ export default async function ProductPage(props: Props) {
                   promotions={promotions}
                   isFreeShipping={isFreeShipping}
                   product={updatedProduct}
-                  swatchOptions={swatchOpt}
                   collectionValue={collectionValue}
                   dropdownSheetIcon={assets.dropdownSheetIcon}
                   cartHeader={assets.cartHeader}
@@ -450,7 +447,11 @@ export default async function ProductPage(props: Props) {
           </div>
 
           <ProductViewed product={product} />
-          <ProductSchema product={product} identifier={newIdentifier} productSku={productSku} />
+          <ProductSchema
+            product={product}
+            identifier={newIdentifier}
+            productSku={productSku}
+          />
 
           <KlaviyoTrackViewedProduct product={product} />
         </ProductProvider>

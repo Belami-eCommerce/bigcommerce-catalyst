@@ -66,15 +66,8 @@ export const PicklistOrText = ({
         ['State*']: inputApi.state,
       }));
     }
-
-    if(from === 'register-form2' && field.label === 'State*' && isCountryCode){
-      setFormValues((prev: any) => ({
-        ...prev,
-        ['State*']: defaultValue,
-      }));
-    }
-  }, [inputApi?.state, isCountryCode]);
-
+  }, [inputApi?.state]);
+ 
   return (
     <Field className="relative space-y-2" name={name}>
       <FieldLabel

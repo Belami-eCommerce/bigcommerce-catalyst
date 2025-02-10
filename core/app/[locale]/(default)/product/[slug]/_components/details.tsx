@@ -11,7 +11,7 @@ import CertificationsAndRatings from '~/components/ui/pdp/belami-certification-r
 import { PayPalPayLater } from '~/components/ui/pdp/belami-payment-pdp';
 import { RequestQuote } from '~/components/ui/pdp/belami-request-a-quote-pdp';
 import { imageManagerImageUrl } from '~/lib/store-assets';
-import { DeliveryMessage } from './belami-product-free-shipping-pdp';
+import { FreeDelivery } from './belami-product-free-shipping-pdp';
 import { ProductForm } from './product-form';
 import { ProductFormFragment } from './product-form/fragment';
 import { ProductSchema, ProductSchemaFragment } from './product-schema';
@@ -25,7 +25,6 @@ import { NoShipCanada } from './belami-product-no-shipping-canada';
 import { Flyout } from '~/components/common-flyout';
 import { ProductPrice } from '~/belami/components/search/product-price';
 import { Promotion } from '~/belami/components/search/hit';
-import { store_pdp_product_in_localstorage } from '../../../sales-buddy/common-components/common-functions';
 
 interface ProductOptionValue {
   entityId: number;
@@ -72,7 +71,6 @@ interface Props {
   getAllCommonSettinngsValues: any;
   isFromQuickView: boolean;
   customerGroupDetails: any;
-  swatchOptions?:any;
 }
 
 export const DetailsFragment = graphql(
@@ -169,8 +167,7 @@ export const Details = ({
   triggerLabel5,
   children5,
   priceMaxRules,
-  isFromQuickView,
- swatchOptions
+  isFromQuickView
 }: Props) => {
   const t = useTranslations('Product.Details');
   const format = useFormatter();
@@ -203,11 +200,6 @@ export const Details = ({
   // Single useEffect for handling scroll and image updates
   useEffect(() => {
     // Scroll handlers
-
-    //Dont remove this function this is for salesbuddy  app 
-    store_pdp_product_in_localstorage(product);
-    //Dont remove this function this is for salesbuddy  app 
-
     const handleScroll = () => {
       setShowStickyHeader(window.scrollY > 1500);
     };
@@ -549,11 +541,9 @@ export const Details = ({
           category_ids={categoryIds}
           free_shipping={isFreeShipping}
         />
-
-        
         <div className="free-shipping-detail mb-[25px] mt-[10px] text-center xl:text-left">
           {selectedVariantId && (
-            <DeliveryMessage
+            <FreeDelivery
               entityId={product.entityId}
               variantId={selectedVariantId}
               isFromPDP={true}
@@ -571,7 +561,6 @@ export const Details = ({
         <div ref={productFormRef}>
           <ProductForm
             data={product}
-            swatchOptions={swatchOptions}
             productMpn={product.mpn || ''}
             multipleOptionIcon={multipleOptionIcon}
             blankAddImg={blankAddImg || ''}

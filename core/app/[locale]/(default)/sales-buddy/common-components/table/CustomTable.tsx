@@ -15,9 +15,9 @@ export default function DynamicList({ data, setFindCustomerData }: DynamicListPr
       setSelectedCustomer(customer.email);
       setFindCustomerData({
         email: customer.email,
-        phone: customer?.phone || "",
+        phone: customer?.company || "",
         first_name: customer.first_name + " " + customer.last_name,
-        company: customer?.company || "",
+        company: customer?.phone || "",
       });
     }
   }, [data, setFindCustomerData]);

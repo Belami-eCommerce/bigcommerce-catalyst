@@ -33,10 +33,7 @@ export const TextField = ({
   const fieldName = name || fieldNameById || fieldId;
 
   return (
-    <Field
-      className="relative space-y-2 pb-7 has-[input[name='custom\_customer-texts-29']]:hidden"
-      name={fieldName}
-    >
+    <Field className="relative space-y-2 pb-7" name={fieldName}>
       <FieldLabel htmlFor={fieldId} isRequired={isRequired}>
         {label}
       </FieldLabel>
@@ -55,7 +52,7 @@ export const TextField = ({
       {isRequired && (
         <>
           <FieldMessage
-            className="text-error-secondary validation-error-1 absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal"
+            className="absolute inset-x-0 bottom-0 inline-flex w-full text-xs font-normal text-error-secondary validation-error-1"
             match="valueMissing"
           >
             {t(fieldNameById ?? 'empty')}

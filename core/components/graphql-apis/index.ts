@@ -7,60 +7,58 @@ import { OrderItemFragment } from '~/app/[locale]/(default)/account/(tabs)/order
 import { cache } from 'react';
 import { OrderDetailsType } from '~/app/[locale]/(default)/account/(tabs)/order/[slug]/page-data';
 import { removeEdgesAndNodes } from '@bigcommerce/catalyst-client';
-import {
-  ProductItemFragment,
-  ProductPageQuery,
-} from '~/app/[locale]/(default)/product/[slug]/page-data';
+import { ProductItemFragment, ProductPageQuery } from '~/app/[locale]/(default)/product/[slug]/page-data';
 import { ProductPageSKUQuery } from '~/app/[locale]/(default)/product/[slug]/page-data';
 
-const ProductMetaFieldsQuery = graphql(`
-  query ProductMetaFieldsQuery($entityId: Int!, $nameSpace: String!) {
-    site {
-      product(entityId: $entityId) {
-        metafields(namespace: $nameSpace, first: 50) {
-          edges {
-            cursor
-            node {
-              entityId
-              id
-              key
-              value
+const ProductMetaFieldsQuery = graphql(
+    `
+    query ProductMetaFieldsQuery($entityId: Int!, $nameSpace: String!) {
+        site {
+            product(entityId: $entityId) {
+                metafields(namespace: $nameSpace, first: 50) {
+                    edges {
+                        cursor
+                        node {
+                            entityId
+                            id
+                            key
+                            value
+                        }
+                    }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
+                        startCursor
+                        hasPreviousPage
+                    }
+                }
             }
-          }
-          pageInfo {
-            endCursor
-            hasNextPage
-            startCursor
-            hasPreviousPage
-          }
         }
-      }
-    }
-  }
-`);
+    }`
+);
 
 export const getProductMetaFields = async (entityId: number, nameSpace: string) => {
   const { data } = await client.fetch({
     document: ProductMetaFieldsQuery,
-    variables: { entityId: entityId, nameSpace: nameSpace },
+    variables: {entityId: entityId, nameSpace: nameSpace}
   });
   return data;
 };
 
 const splitArray = (array: Array<any>, count: number) => {
   let result = [],
-    i = 0;
+  i = 0;
   while (i < array.length) {
-    result.push(array?.slice(i, (i += count)));
+    result.push(array?.slice(i, i += count));
   }
   return result;
-};
+}
 
 export const GetVariantsByProductSKU = async (skuArray: any) => {
   let productVariantData: Array<any> = [];
-  if (skuArray?.length > 0) {
+  if(skuArray?.length > 0) {
     let splitSkuArray = splitArray(skuArray, 20);
-    if (splitSkuArray?.length > 0) {
+    if(splitSkuArray?.length > 0) {
       for await (const skuArrayData of splitSkuArray) {
         let skuQuery = '';
         skuQuery += `query ProductsQuery {
@@ -122,15 +120,16 @@ export const GetVariantsByProductSKU = async (skuArray: any) => {
           fetchOptions: { next: { revalidate } },
         });
         Object.values(data?.site)?.forEach((element: any) => {
-          if (element?.sku) {
-            productVariantData.push({ ...element });
+          if(element?.sku) {
+            productVariantData.push({...element});
           }
         });
       }
     }
   }
   return productVariantData;
-};
+}
+
 
 const OrderShipmentFragment = graphql(`
   fragment OrderShipmentFragment on OrderShipment {
@@ -175,7 +174,7 @@ const mapOrderData = (order: OrderDetailsType) => {
       shipping: order.shippingCostTotal,
       tax: order.taxTotal,
       grandTotal: order.totalIncTax,
-      handlingCost: order.handlingCostTotal,
+      handlingCost: order.handlingCostTotal
     },
     paymentInfo: {
       billingAddress: order.billingAddress,
@@ -310,6 +309,7 @@ export const getOrderDetails = cache(
 
 export const getGuestOrderDetails = cache(
   async (variables: VariablesOf<typeof CustomerOrderDetails>) => {
+
     const response = await client.fetch({
       document: CustomerOrderDetails,
       variables,
@@ -364,80 +364,4 @@ export const getProductBySku = async (variables: SkuVariables) => {
     } as any;
 
   return data.site.product as any;
-};
-
-const GetMultipleChoiceOptionsQuery = graphql(`
-  query GetMultipleChoiceOptions($entityId: Int!, $valuesCursor: String) {
-    site {
-      product(entityId: $entityId) {
-        productOptions(first: 50) {
-          edges {
-            node {
-              entityId
-              displayName
-              isRequired
-              ... on MultipleChoiceOption {
-                displayStyle
-                values(first: 50, after: $valuesCursor) {
-                  edges {
-                    node {
-                      entityId
-                      label
-                      isDefault
-                      isSelected
-                      ... on SwatchOptionValue {
-                        __typename
-                        hexColors
-                        imageUrl(lossy: true, width: 40)
-                      }
-                      ... on ProductPickListOptionValue {
-                        __typename
-                        defaultImage {
-                          altText
-                          url: urlTemplate(lossy: true)
-                        }
-                      }
-                    }
-                  }
-                  pageInfo {
-                    startCursor
-                    endCursor
-                    hasNextPage
-                    hasPreviousPage
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`);
-
-export const getMultipleChoiceOptions = async (
-  productId: number | undefined,
-  valuesCursor?: string | null,
-) => {
-  const customerAccessToken = await getSessionCustomerAccessToken();
-
-  const { data } = await client.fetch({
-    document: GetMultipleChoiceOptionsQuery,
-    variables: { entityId: productId, valuesCursor },
-    customerAccessToken,
-    fetchOptions: customerAccessToken ? { cache: 'no-store' } : { next: { revalidate } },
-  });
-
-  const multipleChoiceOptions = data?.site?.product?.productOptions?.edges?.[1]?.node?.values || [];
-  const allEdges = data?.site?.product?.productOptions?.edges?.[1]?.node?.values?.edges || [];
-
-
-  return {
-    multipleChoiceOptions,
-    allEdges,
-    endCursor:
-      data?.site?.product?.productOptions?.edges?.[1]?.node?.values?.pageInfo?.endCursor || null,
-    hasNextPage:
-      data?.site?.product?.productOptions?.edges?.[1]?.node?.values?.pageInfo?.hasNextPage || false,
-  };
 };

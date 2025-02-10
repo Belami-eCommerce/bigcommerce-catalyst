@@ -49,33 +49,20 @@ interface ProductVariant {
   };
   prices?: PriceData;
 }
-interface Brand {
-  entityId: number;
-  name: string;
-  path: string;
-}
+
 interface Product {
   entityId: number;
   name: string;
   sku: string;
   mpn?: string;
   path: string;
-  brand: Brand;
+  brand?: {
+    name: string;
+    path: string;
+  };
   defaultImage: {
     url: string;
     altText: string;
-  };
-  reviewSummary?: {
-    numberOfReviews: string;
-    averageRating: string;
-  };
-  categories?: {
-    edges: Array<{
-      node: {
-        entityId: number;
-        name: string;
-      };
-    }>;
   };
   variants: {
     edges: Array<{
@@ -120,15 +107,6 @@ interface GetWishlistsParams {
   filters?: WishlistsFiltersInput;
 }
 
-const ReviewSummaryFragment = graphql(`
-  fragment ReviewSummaryFragment on Product {
-    reviewSummary {
-      numberOfReviews
-      averageRating
-    }
-  }
-`);
-
 const WishlistsQuery = graphql(
   `
     query WishlistsQuery(
@@ -153,23 +131,8 @@ const WishlistsQuery = graphql(
                     entityId
                     productEntityId
                     variantEntityId
-
                     product {
                       entityId
-                      brand {
-                        entityId
-                        id
-                        name
-                        path
-                      }
-                      categories {
-                        edges {
-                          node {
-                            entityId
-                            name
-                          }
-                        }
-                      }
                       availabilityV2 {
                         status
                         description
@@ -187,8 +150,10 @@ const WishlistsQuery = graphql(
                       sku
                       mpn
                       path
-
-                      ...ReviewSummaryFragment
+                      brand {
+                        name
+                        path
+                      }
                       variants {
                         edges {
                           node {
@@ -261,7 +226,7 @@ const WishlistsQuery = graphql(
       }
     }
   `,
-  [PaginationFragment, BreadcrumbsFragment, ReviewSummaryFragment],
+  [PaginationFragment, BreadcrumbsFragment],
 );
 
 type WishlistsVariables = VariablesOf<typeof WishlistsQuery>;
