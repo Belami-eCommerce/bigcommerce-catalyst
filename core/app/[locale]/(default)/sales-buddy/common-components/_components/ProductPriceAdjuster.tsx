@@ -138,10 +138,10 @@ const ProductPriceAdjuster: React.FC<ProductPriceAdjusterProps> = ({
       <ProductInfoRow label="PARENT SKU" value={parentSku} />
       <ProductInfoRow label="SKU" value={sku} />
       <ProductInfoRow label="OEM SKU" value={oem_sku} />
-      <ProductInfoRow label="Cost" value={initialCost || '0000.00'} />
+      <ProductInfoRow label="Cost" value={initialCost.toFixed(2) || '0000.00'} />
       <ProductInfoRow
         label="Floor ($)"
-        value={initialFloor ? initialCost * initialFloor : '0000.00'}
+        value={initialFloor ? (initialCost * initialFloor).toFixed(2) : '0000.00'}
       />
 
       {/* <ProductInfoRow label="Markup" value={initialMarkup ? productPrice / initialCost  : '0000.00'} /> */}

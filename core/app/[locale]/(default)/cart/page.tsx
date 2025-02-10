@@ -159,6 +159,7 @@ export default async function Cart({ params }: Props) {
     ...cart.lineItems.digitalItems,
     // ...cart.lineItems.customItems,
   ];
+  
   let cartQty = lineItems?.reduce(function (total: number, cartItems: any) {
     return total + cartItems?.quantity;
   }, 0);
@@ -313,9 +314,11 @@ for (const eachProduct of updatedLineItemWithoutAccessories) {
               discountRules={discountRules}
             />
           ))}
-          {cookie_agent_login_status === 'true' &&
+          {
             CustomItems.length > 0 &&
             CustomItems?.map((data) => {
+              var entityId = data.entityId
+              { console.log(product_data_in_cart?.custom_items[entityId] ,entityId )}
               return (
                 <CartProductComponent
                   key={data.entityId}
@@ -324,7 +327,7 @@ for (const eachProduct of updatedLineItemWithoutAccessories) {
                   product={data}
                   priceAdjustData={
                     product_data_in_cart?.custom_items &&
-                    product_data_in_cart?.custom_items[data?.entityId]
+                    product_data_in_cart?.custom_items[entityId]
                   }
                   ProductType={'custom'}
                   cookie_agent_login_status={cookie_agent_login_status === 'true' ? true : false}
