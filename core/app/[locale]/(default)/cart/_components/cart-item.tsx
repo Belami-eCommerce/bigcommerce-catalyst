@@ -16,10 +16,16 @@ import { Button } from '~/components/ui/button';
 import { calculateProductPrice, retrieveMpnData } from '~/components/common-functions';
 import { commonSettinngs } from '~/components/common-functions';
 import { NoShipCanada } from '../../product/[slug]/_components/belami-product-no-shipping-canada';
-import { FreeDelivery } from '../../product/[slug]/_components/belami-product-free-shipping-pdp';
+import { DeliveryMessage } from '../../product/[slug]/_components/belami-product-free-shipping-pdp';
 import { getSessionUserDetails } from '~/auth';
-import { GetCustomerGroupById, GetEmailId } from '~/components/management-apis';
+import {
+  CheckProductFreeShipping,
+  GetCustomerGroupById,
+  GetEmailId,
+} from '~/components/management-apis';
 import { removeEdgesAndNodes } from '@bigcommerce/catalyst-client';
+import { getActivePromotions } from '~/belami/lib/fetch-promotions';
+import { Promotion } from '../../product/[slug]/_components/promotion';
 
 const PhysicalItemFragment = graphql(`
   fragment PhysicalItemFragment on CartPhysicalItem {
@@ -330,6 +336,11 @@ export const CartItem = async ({
 
   product = { ...product, updatedAccessories };
 
+  const promotions = await getActivePromotions(true);
+
+  const isFreeShipping = await CheckProductFreeShipping(product.entityId.toString());
+  const categoryIds = product?.categories?.edges?.map((edge) => edge.node.entityId) || [];
+
   return (
     <li className="mb-[24px] border border-gray-200">
       {getAllCommonSettinngsValues.hasOwnProperty(brandId) &&
@@ -340,7 +351,7 @@ export const CartItem = async ({
             />
           </div>
         )}
-      <div className="">
+      <div className="cart-products">
         <div className="mb-5 flex flex-col gap-4 p-4 py-4 sm:flex-row">
           <div className="cart-main-img mx-auto h-[295px] w-[295px] flex-none sm:h-[200px] sm:w-[200px] md:mx-0">
             {product.image?.url ? (
@@ -380,6 +391,17 @@ export const CartItem = async ({
                     </div>
                   </div>
                 )}
+
+                {/* promotion */}
+
+                {/* <Promotion
+                  promotions={promotions}
+                  product_id={product.entityId}
+                  brand_id={brandId}
+                  category_ids={categoryIds}
+                  free_shipping={isFreeShipping}
+                /> */}
+
                 {changeTheProtectedPosition?.length > 0 && (
                   <div className="modifier-options flex min-w-full max-w-[600px] flex-wrap gap-2">
                     <div className="cart-options">
@@ -476,11 +498,9 @@ export const CartItem = async ({
                             return null;
                         }
                       })}
-                      <div className="mt-[10px] flex justify-start text-sm font-normal leading-6 tracking-[0.25px]">
-                        <span> Free Delivery</span>
-                      </div>
+
                       {product.variantEntityId && (
-                        <FreeDelivery
+                        <DeliveryMessage
                           entityId={product.productEntityId}
                           variantId={product.variantEntityId}
                           isFromPDP={false}
@@ -666,7 +686,7 @@ export const CartItem = async ({
             discountRules={discountRules}
             product={product}
           />
-        )}
+         )} 
     </li>
   );
 };
