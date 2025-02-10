@@ -179,7 +179,7 @@ const ProductCard = ({
  
   function handlePriceUpdatedProduct(product: any[]) {
     if (Array.isArray(product) && JSON.stringify(updatedWishlist) !== JSON.stringify(product)) {
-      setUpdatedWishlist((prevWishlist) => {
+      setUpdatedWishlist(prevWishlist => {
         if (JSON.stringify(prevWishlist) !== JSON.stringify(product)) {
           return product;
         }
@@ -190,7 +190,7 @@ const ProductCard = ({
   calculateProductPrice(item.product, 'wishlist', discountRules, categoryId)
     .then((result) => {
       const priceUpdatedProduct = result;
-      handlePriceUpdatedProduct(priceUpdatedProduct);
+      handlePriceUpdatedProduct(priceUpdatedProduct); 
     })
     .catch((error) => {
       console.error('Error calculating product price:', error);
