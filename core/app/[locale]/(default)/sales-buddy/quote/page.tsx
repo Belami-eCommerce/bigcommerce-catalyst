@@ -15,6 +15,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import DatePicker from './_components';
+import NewQuote from './_components/newQuote';
 
 const page = () => {
   return (
@@ -103,9 +104,11 @@ const page = () => {
             </div>
           </div>
           <div className="flex items-center justify-end gap-5 px-[38px]">
+            <NewQuote>
             <button className="flex cursor-pointer items-center justify-center rounded-[20px] border border-brand-600 bg-brand-600 p-[5px_25px] text-[13px] text-white hover:bg-white hover:text-brand-600">
               New Quote
             </button>
+            </NewQuote>
             <button className="flex cursor-pointer items-center justify-center rounded-[20px] border border-brand-600 bg-brand-600 p-[5px_25px] text-[13px] text-white hover:bg-white hover:text-brand-600">
               Edit View
             </button>
